@@ -282,7 +282,14 @@ sub _stop_job($;$) {
             }
         }
 
-        for my $file (qw(video.ogv vars.json serial0 autoinst-log.txt)) {
+        #TODO: Why are we showing only a this list of files? it is also present in many places
+        # @openQA/lib/OpenQA/WebAPI/Controller/Test.pm
+        #   171:    my @filelist = qw(video.ogv vars.json backend.json serial0.txt autoinst-log.txt vmstate.gz);
+        # @openQA/lib/OpenQA/Worker/Jobs.pm
+        #    292:        for my $file (qw(video.ogv vars.json serial0 autoinst-log.txt vmstate.gz)) {
+
+
+        for my $file (qw(video.ogv vars.json serial0 autoinst-log.txt vmstate.gz)) {
             next unless -e $file;
             # default serial output file called serial0
             my $ofile = $file;
