@@ -140,7 +140,7 @@ The VMs have unique MAC that differs in the last 16 bits (see /usr/lib/os-autoin
 `os-autoinst-openvswitch.service` sets up filtering rules for the following translation scheme which
 provide non-conflicting addresses visible from host:
 
-[source, bash]
+[source,sh]
 ----
 MAC 52:54:00:12:XX:YY -> IP 10.1.XX.YY
 ----
@@ -148,7 +148,7 @@ MAC 52:54:00:12:XX:YY -> IP 10.1.XX.YY
 That means that the local port of the bridge must be configured to IP 10.0.2.2
 and netmask /15 that covers 10.0.0.0 and 10.1.0.0 ranges.
 
-[source, bash]
+[source,sh]
 ---------------
 ip addr add 10.0.2.2/15 dev br0
 ip route add 10.0.0.0/15 dev br0
@@ -156,7 +156,7 @@ ip link set br0 up
 ---------------
 
 and permanently in /etc/sysconfig/network
-[source, bash]
+[source,sh]
 ---------------
 # /etc/sysconfig/network/ifcfg-br0
 BOOTPROTO='static'
