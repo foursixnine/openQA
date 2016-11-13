@@ -1,11 +1,10 @@
-openQA pitfalls
-===============
-:author: openSUSE Team at SUSE
-:toc:
 
+= openQA pitfalls
+:toc: left
+:toclevels: 6
+:author: OpenQA Team
 
-Needle editing
-==============
+== Needle editing
 
 - If a new needle is created based on a failed test, the new needle
   will not be listed in old tests.
@@ -15,8 +14,7 @@ Needle editing
 - If a needle is deleted, old tests may display an error when viewing
   them in the web UI.
 
-Mixed production and development environment
-============================================
+== Mixed production and Development environment
 
 There are few things to take into account when running a development version and
 a packaged version of openqa:
@@ -27,5 +25,10 @@ permissions over said directory, so that _geekotest_ user and the normal develop
 user can share the environment without problems.
 
 This approach will lead to a problem when the openqa package is updated, since the
-directory permissions will be changed again, nothing a `chmod -R g+rwx /var/lib/openqa/`
-and `chgrp -R openqa /var/lib/openqa` can not fix.
+directory permissions will be changed again, nothing a chmod or chgrp can not fix.
+
+[source,sh]
+----
+chmod -R g+rwx /var/lib/openqa
+chgrp -R openqa /var/lib/openqa
+----
