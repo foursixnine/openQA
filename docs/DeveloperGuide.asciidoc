@@ -1,0 +1,188 @@
+
+= openQA Developer Guide #2
+:toc: left
+:toclevels: 6
+:author: OpenQA Team
+:dev-walkthrough: link:DevWalkthrough.asciidoc[Documented Pitfalls]
+
+== Introduction
+
+This document provides the information needed to start contributing to the
+openQA development improving the tool, fixing bugs and implementing new
+features. For information about writing or improving openQA tests, refer to the
+Tests Developer Guide. In both documents it's assumed that the reader is already
+familiar with openQA and has already read the Starter Guide and installation guide.
+
+All those documents are available at the https://github.com/os-autoinst/openQA[official repository].
+
+== Development environment setup
+
+https://github.com/os-autoinst[os-autoinst organization on GitHub] where several
+repositories can be found:
+
+* https://github.com/os-autoinst/openQA[openQA] containing documentation,
+  server, worker and other support scripts.
+* https://github.com/os-autoinst/os-autoinst[os-autoinst] with the standalone
+  test tool aka os-autoinst backend.
+* https://github.com/os-autoinst/os-autoinst-distri-opensuse[os-autoinst-distri-opensuse]
+  containing the tests used in http://openqa.opensuse.org
+* https://github.com/os-autoinst/os-autoinst-needles-opensuse[os-autoinst-needles-opensuse]
+  with the needles associated to the tests in the former repository.
+* https://github.com/os-autoinst/os-autoinst-distri-example[os-autoinst-distri-example]
+  with an almost empty set of tests meant to be used to start writing tests (and
+  creating the corresponding needles) from scratch for a new operating system.
+
+=== Rules for commits
+[id="rules_for_commits"]
+
+To ensure your perl code changes are consistent with the style rules and everything works run the following
+
+[caption="Within os-autoinst"]
+----
+make tests
+./script/tidy
+----
+
+[caption="Within openQA"]
+----
+make tests
+./tools/tidy
+----
+
+
+Every feature implemented in both packages should be backed by proper tests.
+
+http://perldoc.perl.org/Test/More.html[Test::More] is used to implement those
+tests. As usual, tests are located under the +/t/+ directory. In the openQA
+package, one of the tests consists of a call to
+http://perltidy.sourceforge.net/[Perltidy] to ensure that the contributed code
+follows the most common Perl style conventions.
+
+
+
+== Technologies
+[id="technologies"]
+
+:technologies-sect-contributing:
+
+== How to sections
+
+=== How to overwrite config files
+
+It can be necessary during development to change the config files in +etc/+.
+For example you have to edit etc/openqa/database.ini to use another database.
+Or to increase the log level it's useful to set the loglevel to debug in
+etc/openqa/openqa.ini.
+
+To avoid these changes getting in your git workflow, copy them to a new
+directory and set OPENQA_CONFIG in your shell setup files.
+
+----
+cp -ar etc/openqa etc/mine
+export OPENQA_CONFIG=$PWD/etc/mine
+----
+
+Note that OPENQA_CONFIG points to the directory containing openqa.ini, database.ini,
+client.conf and workers.ini.
+
+=== How to track SQL statements
+
+Executed SQL statements can be traced by setting the +DBIC_TRACE+ environment
+variable before you start the openQA frontend
+
+[caption="openQA Frontend: "]
+.Tracing SQL statements on the WebUI
+[source,bash]
+----
+export DBIC_TRACE=1
+script/openqa prefork -m production --proxy -i 100 -H 400 -w 10 & sleep 1;
+----
+
+=== How to manually start the WebUI
+
+To start the WebUI by yourself, you just need to run the following command:
+
+IMPORTANT: the `openqa-scheduler` and `openqa-websocket` workers must be running already.
+
+[caption="openQA Frontend: "]
+.Manually starting just the WebUI
+[source,bash]
+----
+script/openqa prefork -m production --proxy -i 100 -H 400 -w 10;
+----
+
+As there are different components (gu, openqa-scheduler, openqa-websockets and openqa),
+one might want to run one, a subset or all of these at a given point during development,
+here's how to do it
+
+[caption="openQA Frontend: "]
+.Starting local instances of the complete WebUI
+[source,bash]
+----
+script/openqa gru -m production run & sleep 1; # note the & before the sleep
+script/openqa-scheduler & sleep 1;             # this will fork processes
+script/openqa-websockets & sleep 1;
+script/openqa prefork -m production --proxy -i 100 -H 400 -w 10 &;
+----
+
+=== Running workers
+
+There are multiple ways of running the workers.
+
+[source,bash]
+----
+WORKER_ID=1
+systemctl start openqa-worker@${WORKER_ID}
+----
+
+You can also run workers manually from command line.
+
+Note that you can start as many workers as you want, just keep in mind to specify any arbitary number that is not
+already running (Just in case you have multiple workers).
+
+[source,bash]
+----
+WORKER_ID=1
+sudo -u _openqa-worker /usr/share/openqa/script/worker --instance ${WORKER_ID}
+----
+
+NOTE: This will run a worker manually showing you debug output
+
+If you want to use you local worker instead, cd into your openQA working directory
+(e.g where you git cloned during the {dev-walkthrough}).
+
+[source,bash]
+----
+WORKER_ID=1
+script/worker --instance ${WORKER_ID}
+----
+
+TIP: You can also use the `--isotovideo` to specify your own 'os-autoinst'
+
+=== How to have a shared environment for backend development
+
+This is a tricky setup that can help to speed up development if you're working on the backend (os-autoinst)
+but will also lead you to trouble in some cases... However, to have such environment you should:
+
+. Create a group (say *openqa*) to be shared between _geekotest_, __openqa-worker_,
+  and your own user or the one you use for development.
+. Add _geekotest_, __openqa-worker_, and your user to the group previously created.
+. Set group permissions `rwx` (read, write, execute) to `/var/lib/openqa`
+. Optional: if you have spare space or partition, you could bind-mount
+ `/var/lib/openqa` on a different location or via NFS (specially
+ `/var/lib/openqa/share`) so you do not run into trouble if you are
+ using btrfs and have snapshots enabled.
+
+[source,sh]
+----
+groupadd openqa
+usermod -G openqa -a geekotest
+usermod -G openqa -a _openqa-worker
+usermod -G openqa -a ${USER}
+chmod -R g+rwx /var/lib/openqa
+chgrp -R openqa /var/lib/openqa
+----
+
+=== How keep my btrfs filesystem from becoming bloated?
+
+See step #4 of <<How to have a shared environment for backend development>>
