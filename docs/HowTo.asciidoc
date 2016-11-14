@@ -1,5 +1,5 @@
 
-= openQA Developer Guide #2
+= Advanced Topics and How To's
 :toc: left
 :toclevels: 6
 :author: OpenQA Team
@@ -32,8 +32,8 @@ repositories can be found:
   with an almost empty set of tests meant to be used to start writing tests (and
   creating the corresponding needles) from scratch for a new operating system.
 
-=== Rules for commits
-[id="rules_for_commits"]
+[[keeping-code-clean]]
+=== Keeping code clean
 
 To ensure your perl code changes are consistent with the style rules and everything works run the following
 
@@ -49,7 +49,6 @@ make tests
 ./tools/tidy
 ----
 
-
 Every feature implemented in both packages should be backed by proper tests.
 
 http://perldoc.perl.org/Test/More.html[Test::More] is used to implement those
@@ -58,12 +57,11 @@ package, one of the tests consists of a call to
 http://perltidy.sourceforge.net/[Perltidy] to ensure that the contributed code
 follows the most common Perl style conventions.
 
-
-
+[[technologies-used]]
 == Technologies
-[id="technologies"]
+:technologies: <<Contributing.asciidoc#technologies,Technologies Involved>>
 
-:technologies-sect-contributing:
+Please take a look at {technologies} to have more information
 
 == How to sections
 
