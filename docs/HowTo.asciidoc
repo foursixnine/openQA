@@ -183,4 +183,14 @@ chgrp -R openqa /var/lib/openqa
 
 === How keep my btrfs filesystem from becoming bloated?
 
-See step #4 of <<How to have a shared environment for backend development>>
+See step No. 4 of <<How to have a shared environment for backend development>>
+
+=== How to add a new ISO to OpenQA
+
+Download your ISO to /var/lib/openqa/factory/iso
+wget http://download.suse.de/install/openSUSE-UNTESTED/openSUSE-Tumbleweed-DVD-x86_64-Snapshot20161113-Media.iso
+
+
+script/client isos post DISTRI=opensuse VERSION=Snapshot20161113 ISO=openSUSE-Tumbleweed-DVD-x86_64-Snapshot20161113-Media.iso ARCH=x86_64 FLAVOR=DVD
+
+If you are not using localhost in your client.ini file, then you must specify: --host deimos.suse.de
