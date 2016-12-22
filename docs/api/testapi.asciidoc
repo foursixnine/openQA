@@ -1,0 +1,582 @@
+include::header.asciidoc
+=== init
+
+Used for internal initialization, do not call from tests.
+
+=== set_distribution
+
+    set_distribution($distri);
+
+Set distribution object.
+
+You can use distribution object to implement distribution specific helpers.
+
+== video output handling
+
+=== save_screenshot
+
+  save_screenshot;
+
+Saves screenshot of current SUT screen.
+
+=== record_soft_failure
+
+  record_soft_failure([$reason]);
+
+Record a soft failure on the current test modules result. The result will
+still be counted as a success. Use this to mark where workarounds are applied.
+Takes an optional C<$reason> string which is recorded in the log file.
+
+=== assert_screen
+
+  assert_screen($mustmatch [,$timeout]);
+
+Wait for needle with tag C<$mustmatch> to appear on SUT screen.
+C<$mustmatch> can be string or C<ARRAYREF> of string (C<['tag1', 'tag2']>).
+
+Returns matched needle or throws C<NeedleFailed> exception if $timeout timeout is hit. Default timeout is 30s.
+
+=== check_screen
+
+  check_screen($mustmatch [,$timeout]);
+
+Similar to C<assert_screen> but does not throw exceptions. Use this for optional matches.
+Check C<assert_screen> for parameters.
+
+Returns matched needle or C<undef> if timeout is hit. Default timeout is 30s.
+
+=== match_has_tag
+
+  match_has_tag($tag);
+
+Returns true if last matched needle has C<$tag> else return C<undef>.
+
+=== assert_and_click
+
+  assert_and_click($mustmatch, [$button], [$timeout], [$click_time], [$dclick]);
+
+Wait for needle with C<$mustmatch> tag to appear on SUT screen. Then click C<$button> in the middle
+of last matched region. If C<$dclick> is set, do double click instead.
+C<$mustmatch> can be string or C<ARRAYREF> of strings (C<['tag1', 'tag2']>).
+C<$button> is by default C<'left'>. C<'left'> and C<'right'> is supported.
+
+Throws C<NeedleFailed> exception if C<$timeout> timeout is hit. Default timeout is 30s.
+
+=== assert_and_dclick
+
+  assert_and_dclick($mustmatch, $button, [$timeout], [$click_time]);
+
+Alias for C<assert_and_click> with C<$dclick> set.
+
+=== wait_screen_change
+
+  wait_screen_change { CODEREF [,$timeout] };
+
+Wrapper around code that is supposed to change the screen.
+This is the opposite to C<wait_still_screen>. Make sure to put the commands to change the screen
+within the block to avoid races between the action and the screen change.
+
+Example:
+
+  wait_screen_change {
+     send_key 'esc';
+  };
+
+Returns true if screen changed or C<undef> on timeout. Default timeout is 10s.
+
+=== wait_still_screen
+
+  wait_still_screen([$stilltime_sec [, $timeout_sec [, $similarity_level]]]);
+
+Wait until the screen stops changing.
+
+Returns true if screen is not changed for given $stilltime (in seconds) or undef on timeout.
+Default timeout is 30s, default stilltime is 7s.
+
+== test variable access
+
+=== get_var
+
+  get_var($variable [, $default ])
+
+Returns content of test variable C<$variable> or the C<$default> given as second argument or C<undef>
+
+=== get_required_var
+
+  get_required_var($variable)
+
+Similar to C<get_var> but without default value and throws exception if variable can not be retrieved.
+
+=== set_var
+
+  set_var($variable, $value);
+
+Set test variable C<$variable> to value C<$value>.
+
+=== check_var
+
+  check_var($variable, $value);
+
+Returns true if test variable C<$variable> is equal to C<$value> or returns C<undef>.
+
+=== get_var_array
+
+  get_var_array($variable [, $default ]);
+
+Return the given variable as array reference (split variable value by , | or ; )
+
+=== check_var_array
+
+  check_var_array($variable, $value);
+
+Boolean function to check if a value list contains a value
+
+=== is_serial_terminal
+
+  is_serial_terminal;
+
+Determines if communication with the guest is being performed purely over a
+serial port. When true, the guest should have a tty attached to a serial port
+and os-autoinst sends commands to it as text. This differs from when a text
+console is selected in the guest, but VNC is being used to simulate keypresses.
+
+When a serial terminal is selected you will not be able to use functions which
+rely on needles. This sub is not exported by default as most tests I<will not
+benefit> from changing their behaviour depending on if communication happens
+over serial or VNC.
+
+For more info see consoles/virtio_console.pm and consoles/virtio_screen.pm.
+
+== script execution helpers
+
+=== wait_serial
+
+  wait_serial($regex or ARRAYREF of $regexes [[, $timeout], $expect_not_found]);
+
+Wait for C<$regex> or anyone of C<$regexes> to appear on serial output.
+
+Returns the string matched or C<undef> if C<$expect_not_found> is false
+(default).
+
+Returns C<undef> or (after timeout) the string that I<did _not_ match> if
+C<$expect_not_found> is true.
+
+=== x11_start_program
+
+    x11_start_program($program[, $timeout, $options]);
+
+Start C<$program> in graphical desktop environment.
+
+I<The implementation is distribution specific and not always available.>
+
+=== script_run
+
+  script_run($program [, $wait]);
+
+Run C<$program> (by assuming the console prompt and typing it).
+
+The C<$wait> parameter will (unless 0) wait for the script to finish
+by following the script with an echo to serial line and waiting
+for it. Default timeout is 30s.
+
+I<Make sure the command does not write to the serial output.>
+
+=== assert_script_run
+
+  assert_script_run($cmd [, timeout => $timeout] [, fail_message => $fail_message]);
+
+Deprecated mode
+
+  assert_script_run($cmd [, $timeout [, $fail_message]]);
+
+Run C<$cmd> via C<script_run> and C<die> if its exit status is not zero.
+The exit status is checked by magic string on the serial port.
+See C<script_run> for default timeout.
+C<$fail_message> is returned in the die message if specified.
+
+I<Make sure the command does not write to the serial output.>
+
+=== script_sudo
+
+  script_sudo($program [, $wait]);
+
+Run C<$program> using sudo. Handle the sudo timeout and send password when appropriate.
+C<$wait_seconds> defaults to 2 seconds.
+
+I<The implementation is distribution specific and not always available.>
+
+=== assert_script_sudo
+
+  assert_script_sudo($command [, $wait]);
+
+Run C<$command> via C<script_sudo> and then check by C<wait_serial> if its exit
+status is not zero.
+See C<wait_serial> for default timeout.
+
+I<Make sure the command does not write to the serial output.>
+
+I<The implementation is distribution specific and not always available.>
+
+=== script_output
+
+  script_output($script [, $wait])
+
+fetches the script through HTTP into the SUT and execs it with C<bash -xe> and directs
+C<stdout> (I<not> C<stderr>!) to the serial console and returns the output I<if> the script
+exists with 0. Otherwise the test is set to failed.
+
+The default timeout for the script is 30 seconds. If you need more, pass a second parameter
+
+=== validate_script_output
+
+  validate_script_output($script, $code, [$wait])
+
+Wrapper around script_output, that runs a callback on the output. Use it as
+
+  validate_script_output "cat /etc/hosts", sub { m/127.*localhost/ }
+
+=== become_root
+
+  become_root;
+
+Open a root shell.
+
+I<The implementation is distribution specific and not always available.>
+
+=== ensure_installed
+
+  ensure_installed $package;
+
+Helper to install a package to SUT.
+
+I<The implementation is distribution specific and not always available.>
+
+== miscellaneous
+
+=== power
+
+  power($action);
+
+Trigger backend specific power action, can be C<'on'>, C<'off'>, C<'acpi'> or C<'reset'>
+
+=== assert_shutdown
+
+  assert_shutdown([$timeout]);
+
+Periodically check backend for status until C<'shutdown'>. Does I<not> initiate shutdown.
+Default timeout is 60s
+
+Returns C<undef> on success, throws exception on timeout.
+
+=== eject_cd
+
+  eject_cd;
+
+if backend supports it, eject the CD
+
+=== save_memory_dump
+
+  save_memory_dump([{ filename => undef, migration_speed => "4096m" }]);
+
+Saves the SUT memory state using C<$filename> as base for the memory dump
+filename,  the default will be the current test's name.
+
+The memory dump can be created at any point, but it's recommended to use it
+within a post fail hook. Different filenames should be provided if the dump is
+being used within the test itself.
+
+I<Currently only qemu backend is supported.>
+
+=== save_storage_drives
+
+  save_storage_drives([$filename]);
+
+Saves all of the SUT drives using C<$filename> as part of the final filename,
+the default will be the current test's name. The disk number will be always present.
+
+This method must be called within a post_fail_hook. 
+
+I<Currently only qemu backend is supported.>
+
+=== freeze_vm
+
+  freeze_vm;
+
+If the backend supports it, freeze the vm. This will allow the vm to be
+paused/frozen within the test, but only from the post_fail_hook. So that memory
+and disk dumps can be extracted without any risk of data changing.
+
+Call this method to ensure memory and disk dump refer to the same machine state.
+
+I<Currently only qemu backend is supported.>
+
+=== parse_junit_log
+
+  parse_junit_log("report.xml");
+
+Upload log file from SUT (calls upload_logs internally). The uploaded
+file is then parsed as jUnit format and extra test results are created from it.
+
+=== wait_idle
+
+  wait_idle([$timeout_sec]);
+
+Wait until the system becomes idle (as configured by IDLETHRESHOLD) or timeout.
+This function only works on qemu backend and will sleep on other backends. As
+such it's wasting a lot of time and should be avoided as such. Take it
+as last resort if there is nothing else you can assert on.
+Default timeout is 19s.
+
+== log and data upload and download helpers
+
+=== autoinst_url
+
+  autoinst_url([$path, $query]);
+
+returns the base URL to contact the local C<os-autoinst> service
+
+Optional C<$path> argument is appended after base url. 
+
+Optional HASHREF C<$query> is converted to URL query and appended
+after path.
+
+Returns constructor URL. Can be used inline:
+
+  script_run("curl " . autoinst_url . "/data");
+
+=== data_url
+
+  data_url($name);
+
+returns the URL to download data or asset file
+Special values REPO_\d and ASSET_\d points to the asset configured
+in the corresponding variable
+
+=== upload_logs
+
+  upload_logs($file [, failok => 0 ]);
+
+Upload C<$file> to OpenQA WebUI as a log file and
+return the uploaded file name. If failok is not set, a failed upload
+will cause the test to die. Failed uploads happen if the file does not
+exist or is over 20 GiB in size, so failok is useful when you just want
+to upload the file if it exists but not mind if it doesn't.
+
+=== upload_asset
+
+  upload_asset $file [,$public[,$nocheck]];
+
+Uploads C<$file> as asset to OpenQA WebUI
+
+You can upload private assets only accessible by related jobs:
+
+    upload_asset '/tmp/suse.ps';
+
+Or you can upload public assets that will have a fixed filename
+replacing previous assets - useful for external users:
+
+    upload_asset '/tmp/suse.ps', 1;
+
+If you just want to upload a file and verify that it was uploaded
+correctly on your own (e.g. in svirt console we don't have a serial
+line and can't rely on assert_script_run check), add an optional
+'nocheck' parameter:
+
+    upload_asset '/tmp/suse.ps', 1, 1;
+
+== keyboard support
+
+=== send_key
+
+  send_key($key [, $do_wait]);
+
+Send one C<$key> to SUT keyboard input.
+
+Special characters naming:
+
+  'esc', 'down', 'right', 'up', 'left', 'equal', 'spc',  'minus', 'shift', 'ctrl'
+  'caps', 'meta', 'alt', 'ret', 'tab', 'backspace', 'end', 'delete', 'home', 'insert'
+  'pgup', 'pgdn', 'sysrq', 'super'
+
+=== hold_key
+
+  hold_key($key);
+
+Hold one C<$key> until release it
+
+=== release_key
+
+  release_key($key);
+
+Release one C<$key> which is kept holding
+
+=== send_key_until_needlematch
+
+  send_key_until_needlematch($tag, $key [, $counter, $timeout]);
+
+Send specific key until needle with C<$tag> is not matched or C<$counter> is 0.
+C<$tag> can be string or C<ARRAYREF> (C<['tag1', 'tag2']>)
+Default counter is 20 steps, default timeout is 1s
+
+Throws C<NeedleFailed> exception if needle is not matched until C<$counter> is 0.
+
+=== type_string
+
+  type_string($string [, max_interval => <num> ] [, wait_screen_changes => <num> ] [, secret => 1 ] );
+
+send a string of characters, mapping them to appropriate key names as necessary
+
+you can pass optional parameters with following keys:
+
+C<max_interval (1-250)> determines the typing speed, the lower the
+C<max_interval> the slower the typing.
+
+C<wait_screen_change> if set, type only this many characters at a time
+C<wait_screen_change> and wait for the screen to change between sets.
+
+C<secret (bool)> suppresses logging of the actual string typed.
+
+=== type_password
+
+  type_password([$password]);
+
+A convenience wrapper around C<type_string>, which doesn't log the string.
+
+Uses C<$testapi::password> if no string is given.
+
+== mouse support
+
+=== mouse_set
+
+  mouse_set($x, $y);
+
+Move mouse pointer to given coordinates
+
+=== mouse_click
+
+  mouse_click([$button, $hold_time]);
+
+Click mouse C<$button>. Can be C<'left'> or C<'right'>. Set C<$hold_time> to hold button for set time in seconds.
+Default hold time is 1s
+
+=== mouse_dclick
+
+  mouse_dclick([$button, $hold_time]);
+
+Same as mouse_click only for double click.
+
+=== mouse_tclick
+
+  mouse_tclick([$button, $hold_time]);
+
+Same as mouse_click only for triple click.
+
+=== mouse_hide
+
+  mouse_hide([$border_offset]);
+
+Hide mouse cursor by moving it out of screen area.
+
+== multi console support
+
+All C<testapi> commands that interact with the system under test do that
+through a console.  C<send_key>, C<type_string> type into a console.
+C<assert_screen> 'looks' at a console, C<assert_and_click> looks at
+and clicks on a console.
+
+Most backends support several consoles in some way.  These consoles
+then have names as defined by the backend.
+
+Consoles can be selected for interaction with the system under test.  
+One of them is 'selected' by default, as defined by the backend.
+
+There are no consoles predefined by default, the distribution has
+to add them during initial setup and define actions on what should
+happen when they are selected first by the tests.
+
+E.g. your distribution can give e.g. C<tty2> and C<tty4> a name for the
+tests to select
+
+  $self->add_console('root-console',  'tty-console', {tty => 2});
+  $self->add_console('user-console',  'tty-console', {tty => 4});
+
+=== add_console
+
+  add_console("console", "console type" [, optional console parameters...])
+
+You need to do this in your distribution and not in tests. It will not trigger
+any action on the system under test, but only store the parameters.
+
+The console parameters are console specific.
+
+I<The implementation is distribution specific and not always available.>
+
+=== select_console
+
+  select_console("root-console")
+
+Select the named console for further C<testapi> interaction (send_text,
+send_key, wait_screen_change, ...)
+
+If this the first time, a test selects this console, the distribution
+will get a call into activate_console('root-console', $console_obj) to
+make sure to actually log in root. For the backend it's just a C<tty>
+object (in this example) - so it will ensure the console is active,
+but to setup the root shell on this console, the distribution needs
+to run test code.
+
+=== console
+
+  console("testapi_console")->$console_command(@console_command_args)
+
+Some consoles have special commands beyond C<type_string>, C<assert_screen>
+
+Such commands can be accessed using this API.
+
+C<console("bootloader")>, C<console("errorlog")>, ... returns a proxy
+object for the specific console which can then be directly accessed.
+
+This is also useful for typing/interacting 'in the background',
+without turning the video away from the currently selected console.
+
+Note: C<assert_screen()> and friends look at the currently selected
+console (select_console), no matter which console you send commands to
+here.
+
+=== reset_consoles
+ 
+  reset_consoles;
+
+will make sure the next select_console will activate the console. This is important
+if you did something to the system that affects the console (e.g. trigger reboot).
+
+== audio support
+
+=== start_audiocapture
+
+  start_audiocapture;
+
+Tells the backend to record a C<.wav> file of the sound card.
+
+I<Only supported by qemu backend.>
+
+=== assert_recorded_sound
+
+  assert_recorded_sound('we-will-rock-you');
+
+Tells the backend to record a C<.wav> file of the sound card.
+
+I<Only supported by QEMU backend.>
+
+=== diag
+
+  diag('important message');
+
+Write a diagnostic message to the logfile. In color, if possible.
+
+=== hashed_string
+
+  hashed_string();
+
+Return a short string representing the given string by passing it through the
+MD5 algorithm and taking the first characters.
