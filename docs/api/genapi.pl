@@ -17,7 +17,8 @@ foreach my $current_file (@files){
         $current_file =~ s/^(.*)\.pm$/$1.asciidoc/;
         open(my $ofh, ">", $current_file) or die ("Cannot open $current_file");
 
-        $adoc->append("include::header.asciidoc");
+        $adoc->append("include::header.asciidoc[]");
+        $adoc->append("\n");
         # $adoc->append($adoc->make_header("head0", $current_file =~ s/(.*)\.*/API documentation for $1/ , 1));
         $adoc->parse_from_filehandle($ifh);
 

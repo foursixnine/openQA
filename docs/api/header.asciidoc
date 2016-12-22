@@ -1,1 +1,3 @@
-:toc: right
+:toc: left
+:toclevels: 4
+:leveloffset: 2
