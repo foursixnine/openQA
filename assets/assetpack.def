@@ -81,3 +81,5 @@
 ! audio.svg
 < images/audio.svg
 
+! log4javascript.js
+< http://log4javascript.org/js/log4javascript_uncompressed.js

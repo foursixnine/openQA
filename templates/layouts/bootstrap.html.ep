@@ -23,6 +23,8 @@
       %= asset 'bootstrap.css'
       %= asset 'bootstrap.js'
 
+      %= asset 'log4javascript.js'
+
       %= content_for 'head'
 
       %= javascript begin
@@ -30,6 +32,17 @@
           $(function() {
           setupForAll();
           %= content_for 'ready_function'
+          } );
+      % end
+
+      %= javascript begin
+          %= content_for 'head_javascript'
+          $(function() {
+
+                var log = log4javascript.getLogger("main");
+                var appender = new log4javascript.InPageAppender();
+                log.addAppender(appender);
+
           } );
       % end
 

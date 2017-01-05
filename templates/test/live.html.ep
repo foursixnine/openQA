@@ -48,3 +48,6 @@
 <div class="panel panel-default">
     <pre id="liveterminal" data-url='<%= url_for("liveterminal", testid => $testid) %>'></pre>
 </div>
+<div class="panel panel-default">
+    <div id="log"></div>
+</div>
