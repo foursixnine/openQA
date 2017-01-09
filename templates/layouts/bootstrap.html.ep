@@ -37,13 +37,37 @@
 
       %= javascript begin
           %= content_for 'head_javascript'
-          $(function() {
 
-                var log = log4javascript.getLogger("main");
-                var appender = new log4javascript.InPageAppender();
-                log.addAppender(appender);
+        var logger = log4javascript.getDefaultLogger();
 
-          } );
+        /** var appender = new log4javascript.InPageAppender({
+            containerElement: "l4p",
+            lazyInit: false,
+            width: "800px",
+            height: "150px"
+        });
+
+        logger.addAppender(appender);
+        appender.setInitiallyMinimized(true);
+        appender.setScrollToLatestMessage(true);
+        appender.setWidth("800px");
+        appender.setHeight("200px");
+        appender.setShowCommandLine(false);
+
+        pattern = "%r %p %d{yyy-MMM-dd HH:mm:ss,SSS} %c - %m";
+
+        **/
+
+        var popUpAppender = new log4javascript.PopUpAppender();
+
+        // Change the desired configuration options
+        popUpAppender.setFocusPopUp(false);
+        popUpAppender.setNewestMessageAtTop(true);
+
+        // Add the appender to the logger
+        logger.addAppender(popUpAppender);
+
+
       % end
 
       <link rel="icon"
