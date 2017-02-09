@@ -83,6 +83,18 @@ sub catch_exit {
     }
 }
 
+sub coroner {
+    if (-d $crash_file){
+        check_job_status if -e $jobfile;
+        check_pool_status if -e $autoinst_log;
+        update_job_cause_of_death $crash_file;
+    }
+}
+
+sub update_job_cause_of_death {
+    
+}
+
 $SIG{HUP}  = \*catch_exit;
 $SIG{TERM} = \*catch_exit;
 $SIG{INT}  = \*catch_exit;
