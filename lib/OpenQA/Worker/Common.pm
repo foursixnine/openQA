@@ -445,7 +445,7 @@ sub register_worker {
             if ($err_code =~ /^4\d\d$/) {
                 # don't retry when 4xx codes are returned. There is problem with scheduler
                 log_error(
-                    sprintf('ignoring server - server refused with code %s: %s', $tx->error->{code}, $tx->res->body));
+                    sprintf('ignoring host (%s) - server refused with code %s: %s', $host, $tx->error->{code}, $tx->res->body));
                 delete $hosts->{$host};
                 Mojo::IOLoop->stop unless (scalar keys %$hosts);
             }
