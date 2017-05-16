@@ -120,7 +120,7 @@ sub download_asset {
 
     $tx = $ua->start($tx);
 
-    if ($tx->res->code == 304) {
+    if ($tx->res->code && $tx->res->code == 304) {
         if (toggle_asset_lock($asset, 0)) {
             print $log "CACHE: Content has not changed, not downloading the $asset but updating last use\n";
         }
@@ -148,9 +148,9 @@ sub download_asset {
         }
     }
     else {
-        print $log "CACHE: Download of $asset failed with: "
-          . $tx->res->code . " - "
-          . $tx->res->error->{message} . "\n";
+        my $code = ($tx->res->code) ? $tx->res->code : 'None';
+        my $message = $tx->res->error->{message};
+        print $log "CACHE: Download of $asset failed with: $code - $message\n";
         purge_asset($asset);
         $asset = undef;
     }
