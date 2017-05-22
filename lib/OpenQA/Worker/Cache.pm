@@ -290,7 +290,6 @@ sub update_asset {
         $sth->bind_param(2, $etag);
         $sth->bind_param(3, $size);
         $sth->bind_param(4, $asset);
-
         $sth->execute;
     };
 

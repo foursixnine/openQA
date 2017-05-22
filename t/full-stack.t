@@ -296,7 +296,7 @@ open($conf, '>', 't/full-stack.d/config/workers.ini');
 print $conf <<EOC;
 [global]
 CACHEDIRECTORY = $cache_location
-CACHELIMIT = 50;
+CACHELIMIT = 11116554
 
 [http://localhost:$mojoport]
 TESTPOOLSERVER = $cwd/t/full-stack.d/openqa/share/tests
