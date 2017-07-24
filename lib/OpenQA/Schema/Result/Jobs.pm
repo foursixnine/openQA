@@ -42,6 +42,7 @@ use constant {
     SCHEDULED => 'scheduled',
     SETUP     => 'setup',
     RUNNING   => 'running',
+    PROXIED   => 'proxied',
     CANCELLED => 'cancelled',
     WAITING   => 'waiting',
     DONE      => 'done',
@@ -49,8 +50,8 @@ use constant {
     ASSIGNED  => 'assigned'
 };
 
-use constant STATES => (SCHEDULED, ASSIGNED, SETUP, RUNNING, UPLOADING, WAITING, DONE, CANCELLED);
-use constant PENDING_STATES => (SCHEDULED, ASSIGNED, SETUP, RUNNING, WAITING, UPLOADING);
+use constant STATES => (SCHEDULED, ASSIGNED, SETUP, RUNNING, PROXIED, UPLOADING, WAITING, DONE, CANCELLED);
+use constant PENDING_STATES => (SCHEDULED, ASSIGNED, SETUP, PROXIED, RUNNING, WAITING, UPLOADING);
 use constant EXECUTION_STATES => (ASSIGNED, SETUP, WAITING, RUNNING, UPLOADING);
 use constant PRE_EXECUTION_STATES => (SCHEDULED);    # Assigned belongs to pre execution, but makes no sense for now
 use constant FINAL_STATES => (DONE, CANCELLED);
