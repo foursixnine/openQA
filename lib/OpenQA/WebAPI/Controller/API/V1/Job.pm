@@ -260,7 +260,7 @@ sub update {
     my $settings = delete $json->{settings};
 
     # validate specified columns (print error if at least one specified column does not exist)
-    my @allowed_cols = qw(group_id priority retry_avbl);
+    my @allowed_cols = qw(group_id priority retry_avbl backend backend_info);
     for my $key (keys %$json) {
         if (!grep $_ eq $key, @allowed_cols) {
             return $self->render(json => {error => "Column $key can not be set"}, status => 400);
