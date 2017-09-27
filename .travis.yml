@@ -3,37 +3,6 @@ dist: trusty
 language: perl
 perl:
   - "5.18"
-addons: 
-  ssh_known_hosts: github.com
-  apt:
-    packages:
-      - libgmp3-dev
-      - libdbus-1-dev
-      - dbus-x11
-env:
-  matrix:
-    - FULLSTACK=0 UITESTS=0
-    - FULLSTACK=0 UITESTS=1 SELENIUM_CHROME=0
-    - GH_PUBLISH=true FULLSTACK=1 SELENIUM_CHROME=0
-  global:
-    - COMMIT_AUTHOR_EMAIL=skynet@open.qa
-before_install:
-  - cpanm local::lib
-  - eval "$(perl -Mlocal::lib=${HOME}/perl_modules)"
-  # prepare for chromedriver - so it's easier to test on travis
-  # run it in before_install so it has some time to startup
-  - sh -e /etc/init.d/xvfb start
-  - export DISPLAY=:99.0
-  - mkdir -p $HOME/chrome
-  - if ! test -f $HOME/chrome/chromedriver; then curl -s https://chromedriver.storage.googleapis.com/2.27/chromedriver_linux64.zip | funzip - > $HOME/chrome/chromedriver; fi
-  - chmod a+x $HOME/chrome/chromedriver
-  - export PATH=$PATH:$HOME/chrome
-install:
-  - gem install sass
-  - cpanm -nq --installdeps --with-feature=coverage .
-script:
-  - bash script/generate-documentation $encrypted_e2c381aa6b8c_key $encrypted_e2c381aa6b8c_iv
-  - make travis-codecov
 after_failure:
   - cat /tmp/openqa-debug.log
 cache:
@@ -41,3 +10,50 @@ cache:
     - $HOME/perl_modules
     - assets/cache
     - $HOME/chrome
+script: true
+env:
+  global:
+    - COMMIT_AUTHOR_EMAIL=skynet@open.qa
+jobs:
+  include:
+    - stage: Cache and Dependencies
+      script: true
+      addons: 
+        ssh_known_hosts: github.com
+        apt:
+          packages:
+            - libgmp3-dev
+            - libdbus-1-dev
+            - dbus-x11
+      before_install:
+        - cpanm local::lib
+        - eval "$(perl -Mlocal::lib=${HOME}/perl_modules)"
+        # prepare for chromedriver - so it's easier to test on travis
+        # run it in before_install so it has some time to startup
+        - sh -e /etc/init.d/xvfb start
+        - export DISPLAY=:99.0
+        - mkdir -p $HOME/chrome
+        - if ! test -f $HOME/chrome/chromedriver; then curl -s https://chromedriver.storage.googleapis.com/2.27/chromedriver_linux64.zip | funzip - > $HOME/chrome/chromedriver; fi
+        - chmod a+x $HOME/chrome/chromedriver
+        - export PATH=$PATH:$HOME/chrome
+      install:
+        - gem install sass
+        - cpanm -nq --installdeps --with-feature=coverage .
+    - stage: unit tests
+      env:
+        - FULLSTACK=0 UITESTS=0
+      script:
+        - bash script/generate-documentation $encrypted_e2c381aa6b8c_key $encrypted_e2c381aa6b8c_iv
+        - make travis-codecov
+    - stage: ui tests
+      env:
+        - FULLSTACK=0 UITESTS=1 SELENIUM_CHROME=0
+      script:
+        - bash script/generate-documentation $encrypted_e2c381aa6b8c_key $encrypted_e2c381aa6b8c_iv
+        - make travis-codecov
+    - stage: fullstack and docs
+      script:
+        - bash script/generate-documentation $encrypted_e2c381aa6b8c_key $encrypted_e2c381aa6b8c_iv
+        - make travis-codecov
+      env:
+        - GH_PUBLISH=true FULLSTACK=1 SELENIUM_CHROME=0
