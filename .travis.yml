@@ -14,7 +14,6 @@ env:
   matrix:
     - FULLSTACK=0 UITESTS=0
     - FULLSTACK=0 UITESTS=1 SELENIUM_CHROME=0
-    - GH_PUBLISH=true FULLSTACK=1 SELENIUM_CHROME=0
   global:
     - COMMIT_AUTHOR_EMAIL=skynet@open.qa
 before_install:
@@ -41,3 +40,9 @@ cache:
     - $HOME/perl_modules
     - assets/cache
     - $HOME/chrome
+jobs:
+  include:
+    - stage: fullstack and docs
+      script: make travis-codecov
+      env:
+        - GH_PUBLISH=true FULLSTACK=1 SELENIUM_CHROME= UITESTS=
