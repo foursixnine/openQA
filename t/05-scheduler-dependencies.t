@@ -714,11 +714,12 @@ is_deeply($jobD2_h->{parents}->{Chained}, [$jobA2->id], 'jobD2 has jobA2 as chai
 is($jobD2_h->{settings}{TEST}, $jobD->TEST, 'jobD2 test and jobD test are equal');
 
 my $jobA2_h = job_get_deps($jobA2->id);
-is_deeply(
-    $jobA2_h->{children}->{Chained},
-    [$jobB2_h->{id}, $jobC2_h->{id}, $jobD2_h->{id}],
-    'jobA2 has jobB2, jobC2 and jobD2 as children'
-);
+my @a_ =    @{$jobA2_h->{children}->{Chained}};
+my @b_ =    @{[$jobB2_h->{id}, $jobC2_h->{id}, $jobD2_h->{id}]};
+@a_ =    sort { $a <=> $b } @a_;
+@b_ =    sort { $a <=> $b } @b_;
+note explain (\@a_, \@b_);
+is_deeply(\@a_, \@b_, 'jobA2 has jobB2, jobC2 and jobD2 as children') or diag explain (\@a_, \@b_);
 
 # situation parent is done, children running -> parent is cloned -> parent is running -> parent is cloned. Check all children has new parent:
 # A <- B
@@ -778,19 +779,19 @@ $jobB = _job_create(\%settingsB, undef, [$jobA->id]);
 $jobC = _job_create(\%settingsC, [$jobB->id], [$jobA->id]);
 $jobD = _job_create(\%settingsD, [$jobB->id], [$jobA->id]);
 
+$schema->storage->debug(1);
 # hack jobs to appear done to scheduler
 _jobs_update_state([$jobA], OpenQA::Schema::Result::Jobs::DONE, OpenQA::Schema::Result::Jobs::PASSED);
 _jobs_update_state([$jobB, $jobC, $jobD], OpenQA::Schema::Result::Jobs::DONE, OpenQA::Schema::Result::Jobs::FAILED);
-
 $jobA2 = $jobA->auto_duplicate;
 $_->discard_changes for ($jobA, $jobB, $jobC, $jobD);
-
 # check all children were cloned and has $jobA as parent
 for ($jobB, $jobC, $jobD) {
     ok($_->clone, 'job cloned');
     my $h = job_get_deps($_->clone->id);
     is_deeply($h->{parents}{Chained}, [$jobA2->id], 'job has jobA2 as parent');
 }
+$schema->storage->debug(0);
 
 for ($jobC, $jobD) {
     my $h = job_get_deps($_->clone->id);
