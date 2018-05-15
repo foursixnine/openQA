@@ -34,17 +34,29 @@ sub parse {
     # may be optional since format result_array:v2
     $self->generated_tests_extra->add(OpenQA::Parser::Result::LTP::Environment->new($decoded_json->{environment}))
       if $decoded_json->{environment};
-
+    my $test = OpenQA::Parser::Result::LTP::SubTest->new(
+        flags    => {},
+        category => 'LTP',
+        name     => 'LTP-TESTS',
+        log      => 'No log',
+        duration => 'No Duration',
+        script   => undef,
+        result   => 'ok'
+    );
+    my $test_name;
     foreach my $res (@{$decoded_json->{results}}) {
         my $result = dclone $res;
-        my $t_name = $res->{test_fqn};
+        my $t_name = $test_name = $res->{test_fqn};
         $t_name =~ s/:/_/g;
+
+        my ($category, $test_suite,$test_case) = split(/:/, $test_name);
+        $t_name = $test_case;
 
         $result->{result} = 'ok';
         $result->{result} = 'fail' if $result->{test}->{result} !~ /pass/i || $result->{status} !~ /pass/i;
 
         # may be optional since format result_array:v2
-        $result->{environment} = OpenQA::Parser::Result::LTP::Environment->new($result->{environment})
+        $test->{environment} = OpenQA::Parser::Result::LTP::Environment->new($result->{environment})
           if $res->{environment};
         $t_name =~ s/[\/.]/_/g;    # dots in the filename confuse the web api routes
         $result->{name} = $t_name;
@@ -57,7 +69,7 @@ sub parse {
         $details->{text}  = $text_fn;
         $details->{title} = $t_name;
 
-        push @{$result->{details}}, $details;
+        push @{$test->{details}}, $details;
 
         $self->_add_output(
             {
@@ -65,18 +77,12 @@ sub parse {
                 content => $content
             });
 
-        my $t = OpenQA::Parser::Result::LTP::SubTest->new(
-            flags    => {},
-            category => 'LTP',
-            name     => $t_name,
-            log      => $res->{test}->{log},
-            duration => $res->{test}->{duration},
-            script   => undef,
-            result   => $res->{test}->{result});
-        $self->tests->add($t);
-        $result->{test} = $t if $self->include_results();
-        $self->_add_single_result($result);
+        $result->{test} = $test if $self->include_results();
     }
+    my ($category, $test_suite,$test_case) = split(/:/, $test_name);
+    $test->{name} = $test_suite;
+    $self->tests->add($test);
+    $self->_add_single_result($test);
 
     $self;
 }
