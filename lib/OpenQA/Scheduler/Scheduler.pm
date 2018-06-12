@@ -26,7 +26,7 @@ use DBIx::Class 0.082801;
 use DBIx::Class::ResultClass::HashRefInflator;
 use Digest::MD5;
 use Data::Dumper;
-use Data::Dump qw(dd pp);
+use Data::Dump qw(dd pp dump);
 use Date::Format 'time2str';
 use DBIx::Class::Timestamps 'now';
 use DateTime;
@@ -145,8 +145,11 @@ sub _prefer_parallel {
             join => 'parent',
         });
 
+my @p = $parents->get_column('parent_job_id')->all;
+my $w;
     while ($parents->count() > 0) {
-
+$w->{@p}++;
+last if $w->{@p} >2;
         my $available_parents = $parents->search(
             {
                 parent_job_id => $available_cond
@@ -250,8 +253,10 @@ sub schedule {
                 }
 
                 my $allocating = {};
+		my $count = 0;
                 for my $w (@free_workers) {
                     next if !$w->id();
+		    #last if $count++ > 50;
                     # Get possible jobs by priority that can be allocated
                     # by checking workers capabilities
                     my @possible_jobs = job_grab(
@@ -492,16 +497,17 @@ sub _build_search_query {
                     dependency => OpenQA::Schema::Result::JobDependencies::PARALLEL,
                     state      => OpenQA::Schema::Result::Jobs::SCHEDULED,
                     (parent_job_id => {-not_in => $allocating}) x !!(@$allocating > 0),
-                }
+               }
             ],
         },
         {
             join => 'parent',
         });
+    my @blocked_children = $blocked->get_column('child_job_id')->all;
     my @available_cond = (    # ids available for this worker
         '-and',
         {
-            -not_in => $blocked->get_column('child_job_id')->as_query
+            -not_in => \@blocked_children
         },
     );
     push @available_cond, {-not_in => $allocating} if @$allocating > 0;
@@ -534,7 +540,8 @@ sub _build_search_query {
 
     my $preferred_parallel = _prefer_parallel(\@available_cond, $allocating);
     push @available_cond, $preferred_parallel if $preferred_parallel;
-    return @available_cond;
+log_debug(">>>>>>>>>>>>>>>>>>> Finished building up search query");    
+return @available_cond;
 }
 
 
@@ -587,7 +594,7 @@ sub filter_jobs {
     # so we stripped down to what we needed
 
     try {
-        my @running = map { $_->to_hash(assets => 1) }
+        my @running = map { $_->to_hash() }
           schema->resultset("Jobs")->search({state => OpenQA::Schema::Result::Jobs::RUNNING})->all;
 
         # Build adjacent list with the tests that would have been assigned
@@ -688,7 +695,7 @@ sub job_grab {
         # That means if a worker change capabilities needs to be restarted.
     }
     catch {
-        log_warning("Invalid worker id '$workerid'");
+        log_warning("Invalid worker id '$workerid': $_");
         return {};
     };
 
@@ -731,10 +738,10 @@ sub job_grab {
 
     return $job_n >= 0 ?
       @jobs ?
-        map { $_->to_hash(assets => 1) } @jobs
+        map { $_->to_hash() } @jobs
         : ()
       : $jobs[0] ?
-      $jobs[0]->to_hash(assets => 1)
+      $jobs[0]->to_hash()
       : {}
       unless ($allocate);
 #return scalar(@jobs) == 0 ? () : $job_n!=1 ? map {$_->to_hash(assets => 1)} @jobs : $jobs[0] ?  $jobs[0]->to_hash(assets => 1) : {}  unless ($allocate);
