@@ -29,6 +29,7 @@ use Scalar::Util 'blessed';
 use Data::Dump 'pp';
 use Mojo::Log;
 use Scalar::Util qw(blessed reftype);
+use OpenQA::Jobs::Constants;
 
 require Exporter;
 our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -97,7 +98,7 @@ $VERSION = sprintf "%d.%03d", q$Revision: 1.12 $ =~ /(\d+)/g;
   &ensure_timestamp_appended
 );
 
-@EXPORT_OK = qw(determine_web_ui_web_socket_url get_ws_status_only_url);
+@EXPORT_OK = qw(determine_web_ui_web_socket_url get_ws_status_only_url determine_os_autoinst_web_socket_url);
 
 if ($0 =~ /\.t$/) {
     # This should result in the 't' directory, even if $0 is in a subdirectory
@@ -426,6 +427,24 @@ sub image_md5_filename {
         catfile($imagesdir, $prefix1, $prefix2, "$md5.png"),
         catfile($imagesdir, $prefix1, $prefix2, '.thumbs', "$md5.png"));
 }
+
+# returns the isotovideo command server web socket URL for the given job or undef if not available
+sub determine_os_autoinst_web_socket_url {
+    my ($job) = @_;
+    return unless $job->state eq OpenQA::Jobs::Constants::RUNNING;
+
+    # determine job token and host from worker
+    my $worker    = $job->assigned_worker             or return;
+    my $job_token = $worker->get_property('JOBTOKEN') or return;
+    my $host      = $worker->host                     or return;
+
+    # determine port
+    my $cmd_srv_raw_url = $worker->get_property('CMD_SRV_URL') or return;
+    my $cmd_srv_url     = Mojo::URL->new($cmd_srv_raw_url);
+    my $port            = $cmd_srv_url->port() or return;
+    return "ws://$host:$port/$job_token/ws";
+}
+
 
 # returns the url to the web socket proxy started via openqa-livehandler
 sub determine_web_ui_web_socket_url {

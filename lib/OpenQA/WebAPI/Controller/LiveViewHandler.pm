@@ -19,7 +19,7 @@ use strict;
 use Try::Tiny;
 use Mojo::URL;
 use Mojo::Base 'OpenQA::WebAPI::Controller::Developer';
-use OpenQA::Utils;
+use OpenQA::Utils qw(determine_os_autoinst_web_socket_url log_debug);
 use OpenQA::Jobs::Constants;
 use OpenQA::Schema::Result::Jobs;
 use List::MoreUtils;
@@ -260,7 +260,7 @@ sub connect_to_cmd_srv {
                         error => 'unable to upgrade ws to command server');
                     return;
                 }
-                OpenQA::Utils::log_debug('ws_proxy: following ws redirection to: ' . $location_header);
+                log_debug('ws_proxy: following ws redirection to: ' . $location_header);
                 $cmd_srv_url = $cmd_srv_url->parse($location_header);
                 $self->connect_to_cmd_srv($job_id, $cmd_srv_raw_url, $cmd_srv_url);
                 return;
@@ -378,7 +378,7 @@ sub ws_proxy {
     }
 
     # determine url to os-autoinst command server
-    my $cmd_srv_raw_url = OpenQA::WebAPI::Controller::Developer::determine_os_autoinst_web_socket_url($job);
+    my $cmd_srv_raw_url = determine_os_autoinst_web_socket_url($job);
     if (!$cmd_srv_raw_url) {
         $app->log->debug('ws_proxy: attempt to open for job ' . $job->name . ' (' . $job_id . ')');
         $self->send_message_to_java_script_clients_and_quit($job_id,

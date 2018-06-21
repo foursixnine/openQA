@@ -19,26 +19,9 @@ use strict;
 use Try::Tiny;
 use Mojo::URL;
 use Mojo::Base 'Mojolicious::Controller';
-use OpenQA::Utils 'determine_web_ui_web_socket_url';
+use OpenQA::Utils qw(determine_web_ui_web_socket_url determine_os_autoinst_web_socket_url);
 use OpenQA::Jobs::Constants;
 use OpenQA::Schema::Result::Jobs;
-
-# returns the isotovideo command server web socket URL for the given job or undef if not available
-sub determine_os_autoinst_web_socket_url {
-    my ($job) = @_;
-    return unless $job->state eq OpenQA::Jobs::Constants::RUNNING;
-
-    # determine job token and host from worker
-    my $worker    = $job->assigned_worker             or return;
-    my $job_token = $worker->get_property('JOBTOKEN') or return;
-    my $host      = $worker->host                     or return;
-
-    # determine port
-    my $cmd_srv_raw_url = $worker->get_property('CMD_SRV_URL') or return;
-    my $cmd_srv_url     = Mojo::URL->new($cmd_srv_raw_url);
-    my $port            = $cmd_srv_url->port() or return;
-    return "ws://$host:$port/$job_token/ws";
-}
 
 # returns the job for the currently processed request
 sub find_current_job {
