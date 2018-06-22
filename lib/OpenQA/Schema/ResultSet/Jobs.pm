@@ -20,7 +20,7 @@ use base 'DBIx::Class::ResultSet';
 use DBIx::Class::Timestamps 'now';
 use Date::Format 'time2str';
 use OpenQA::Schema::Result::JobDependencies;
-use OpenQA::Utils 'wakeup_scheduler';
+use OpenQA::Utils qw(wakeup_scheduler log_info);
 use Cpanel::JSON::XS;
 
 =head2 latest_build
@@ -146,6 +146,8 @@ sub create_from_settings {
         }
         delete $settings{_START_AFTER_JOBS};
     }
+    use Data::Dump qw(dump);
+    use Carp;
 
     if ($settings{_PARALLEL_JOBS}) {
         my $ids = $settings{_PARALLEL_JOBS};    # support array ref or comma separated values
@@ -157,7 +159,8 @@ sub create_from_settings {
                 dependency    => OpenQA::Schema::Result::JobDependencies::PARALLEL,
               };
         }
-        delete $settings{_PARALLEL_JOBS};
+        log_info(Data::Dump::pp($settings));
+        log_info(Data::Dump::pp(%new_job_args));
     }
     # migrate the important keys
     for my $key (qw(DISTRI VERSION FLAVOR ARCH TEST MACHINE BUILD)) {

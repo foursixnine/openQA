@@ -116,6 +116,9 @@
             {machine => {name => '64bit'}, test_suite => {name => 'client2'},      prio => 40, group_id => 1001},
             {machine => {name => '64bit'}, test_suite => {name => 'server'},       prio => 40, group_id => 1001},
             {machine => {name => '64bit'}, test_suite => {name => 'advanced_kde'}, prio => 40, group_id => 1001},
+            {machine => {name => '64bit'}, test_suite => {name => 'algol-a'}, prio => 40, group_id => 1002},
+            {machine => {name => '64bit'}, test_suite => {name => 'algol-b'}, prio => 40, group_id => 1002},
+            {machine => {name => '64bit'}, test_suite => {name => 'algol-c'}, prio => 40, group_id => 1002},
         ],
     },
 ]

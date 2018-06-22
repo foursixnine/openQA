@@ -43,4 +43,41 @@ __PACKAGE__->has_many(
     settings => 'OpenQA::Schema::Result::TestSuiteSettings',
     'test_suite_id', {order_by => {-asc => 'key'}});
 
+=head2 is_cluster
+
+=over
+ 
+=item Returns list of test suites that belong to the cluster
+
+=back
+
+Checks if a test_suite is part of a cluster
+
+in array context it should return a hash of chained and parallel
+
+=cut
+
+sub is_cluster {
+    my ($self, $args) = @_;
+    my $ts = $self->settings->find({key => 'PARALLEL_WITH'});
+    return split /,/, $ts->value if $ts;
+    return 0;
+}
+
+sub has_cycles {
+    my ($self, $args) = @_;
+    use feature 'say';
+    use Data::Dump qw(dump pp);
+    my $rsource = $self->result_source;
+    my @cycles;
+    my $ts_name = '%' . $self->name . '%';
+
+    @cycles
+      = map { split /,/, $_->value } $rsource->schema->resultset('OpenQA::Schema::Result::TestSuiteSettings')->search(
+        {
+            key   => 'PARALLEL_WITH',
+            value => {like => $ts_name}})->all;
+    return @cycles;
+}
+
 1;
