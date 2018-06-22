@@ -70,6 +70,24 @@
             {key => "PUBLISH_HDD_1",    value => "%DISTRI%-%VERSION%-%ARCH%-%DESKTOP%-%QEMUCPU%.qcow2"}
         ],
     },
+    TestSuites => {
+        id          => 1018,
+        name        => "algol-a",
+        description => 'algol a test',
+        settings    => [{key => "DESKTOP", value => "kde"}, {key => "PARALLEL_WITH", value => "algol-b"},],
+    },
+    TestSuites => {
+        id          => 1019,
+        name        => "algol-b",
+        description => 'Bad test suite',
+        settings    => [{key => "DESKTOP", value => "kde"}, {key => "PARALLEL_WITH", value => "algol-c"},],
+    },
+    TestSuites => {
+        id          => 1020,
+        name        => "algol-c",
+        description => 'Algol c test suite',
+        settings    => [{key => "DESKTOP", value => "kde"}, {key => "PARALLEL_WITH", value => "algol-a,algol-b"},],
+    },
     Products => {
         id       => 1,
         name     => '',
