@@ -304,7 +304,7 @@ subtest 'developer session visible in live view' => sub {
 
     subtest 'initial state of UI controls' => sub {
         wait_for_session_info(qr/owned by Demo/, 'user displayed');
-        element_visible('#developer-instructions',       qr/connect to .* at port 91/);
+        element_visible('#developer-instructions',       qr/VNC to .* at port 5091/);
         element_visible('#developer-panel .card-header', qr/paused/);
         element_hidden('#developer-panel .card-body');
     };
@@ -337,7 +337,7 @@ subtest 'status-only route accessible for other users' => sub {
 
     subtest 'initial state of UI controls' => sub {
         wait_for_session_info(qr/owned by Demo/, 'user displayed');
-        element_visible('#developer-instructions',       qr/connect to .* at port 91/);
+        element_visible('#developer-instructions',       qr/VNC to .* at port 5091/);
         element_visible('#developer-panel .card-header', qr/paused/);
         element_hidden('#developer-panel .card-body');
     };
