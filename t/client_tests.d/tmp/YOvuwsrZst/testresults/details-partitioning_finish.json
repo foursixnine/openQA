@@ -1,0 +1,1 @@
+{"result":"passed","details":[{"area":[{"diff":"partitioning_finish-1-inst-timezone-132SC-B0049-diff0.png","result":"ok","y":"43","h":638,"similarity":96,"x":"13","w":999}],"num":1,"tags":["after-paritioning"],"result":"ok","screenshot":"partitioning_finish-1.png","needle":"inst-timezone-132SC-B0049"}],"name":"partitioning_finish","important":0,"milestone":0,"fatal":0}

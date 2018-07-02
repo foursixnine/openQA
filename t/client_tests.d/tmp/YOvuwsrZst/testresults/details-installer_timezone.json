@@ -1,0 +1,1 @@
+{"important":0,"milestone":0,"fatal":0,"result":"passed","details":[{"area":[{"x":"13","w":999,"similarity":96,"y":"43","h":638,"diff":"installer_timezone-1-inst-timezone-132SC-B0049-diff0.png","result":"ok"}],"num":1,"screenshot":"installer_timezone-1.png","needle":"inst-timezone-132SC-B0049","tags":["inst-timezone"],"result":"ok"}],"name":"installer_timezone"}

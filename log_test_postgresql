@@ -1,0 +1,3 @@
+2018-06-18 13:55:50.413 CEST   [4448]LOG:  listening on Unix socket "/tmp/tmp.IdU16Vuo0J/.s.PGSQL.5432"
+2018-06-18 13:55:50.418 CEST   [4448]LOG:  redirecting log output to logging collector process
+2018-06-18 13:55:50.418 CEST   [4448]HINT:  Future log output will appear in directory "log".
