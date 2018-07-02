@@ -91,10 +91,14 @@ endif
 
 .PHONY: docker-tests
 docker-tests:
+	set -x
 	export OPENQA_LOGFILE=/opt/openqa/openqa-debug.log ;\
 	if test "x$$FULLSTACK" = x1 || test "x$$SCHEDULER_FULLSTACK" = x1 || test "x$$DEVELOPER_FULLSTACK" = x1; then \
-		git clone https://github.com/os-autoinst/os-autoinst.git ../os-autoinst ;\
-		cd ../os-autoinst ;\
+		if test -z "$$CUSTOM_OS_AUTOINST"; then\
+	        rm -rf os-autoinst ;\
+	        git clone https://github.com/os-autoinst/os-autoinst.git os-autoinst ;\
+		fi ;\
+		cd os-autoinst ;\
 		cpanm -n --mirror http://no.where/ --installdeps . ;\
 		if [ $$? -eq 0 ]; then\
 			sh autogen.sh && make ;\

@@ -165,7 +165,7 @@ javascript_console_has_no_warnings_or_errors;
 sub start_worker {
     $workerpid = fork();
     if ($workerpid == 0) {
-        exec("perl ./script/worker --instance=1 $connect_args --isotovideo=../os-autoinst/isotovideo --verbose");
+        exec("perl ./script/worker --instance=1 $connect_args --isotovideo=./os-autoinst/isotovideo --verbose");
         die "FAILED TO START WORKER";
     }
 }
@@ -504,12 +504,12 @@ subtest 'Isotovideo version' => sub {
     OpenQA::Worker::init({}, {apikey => 123, apisecret => 456, instance => 1});
     $OpenQA::Worker::Common::isotovideo_interface_version = 0;
 
-    OpenQA::Worker::Engines::isotovideo::set_engine_exec('../os-autoinst/isotovideo');
+    OpenQA::Worker::Engines::isotovideo::set_engine_exec('./os-autoinst/isotovideo');
     ok($OpenQA::Worker::Common::isotovideo_interface_version > 0, 'update isotovideo version via set_engine_exec');
 
     $OpenQA::Worker::Common::isotovideo_interface_version = 0;
     OpenQA::Worker::init({},
-        {apikey => 123, apisecret => 456, instance => 1, isotovideo => '../os-autoinst/isotovideo'});
+        {apikey => 123, apisecret => 456, instance => 1, isotovideo => './os-autoinst/isotovideo'});
     ok(
         $OpenQA::Worker::Common::isotovideo_interface_version > 0,
         'update isotovideo version indirectly via OpenQA::Worker::init'
