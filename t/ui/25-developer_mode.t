@@ -179,7 +179,7 @@ subtest 'state shown when connected' => sub {
     # currently paused
     fake_state(developerMode => {isPaused => 'true'});
     element_visible('#developer-instructions',
-        qr/System is waiting for developer, connect to remotehost at port 91 with Shared mode/,
+        qr/System is waiting for developer, connect through VNC to remotehost at port 5091 with Shared mode/,
     );
     element_visible('#developer-panel .card-header', qr/paused at module: installation-welcome/, qr/current module/,);
 
