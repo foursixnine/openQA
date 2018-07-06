@@ -203,6 +203,12 @@ sub _generate_jobs {
             carp "no templates found for " . join('-', map { $args->{$_} } qw(DISTRI VERSION FLAVOR ARCH));
         }
         for my $job_template (@templates) {
+            if ($job_template->test_suite->is_cluster) {
+                log_info('This is a cluster!' . pp($job_template->test_suite->is_cluster));
+                if (my @cycles = $job_template->test_suite->has_cycles) {
+                    next if @cycles;
+                }
+            }
             my %settings = map { $_->key => $_->value } $product->settings;
 
             # we need to merge worker classes of all 3
