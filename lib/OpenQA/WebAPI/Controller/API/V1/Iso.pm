@@ -24,6 +24,7 @@ use Try::Tiny;
 use DBIx::Class::Timestamps 'now';
 use OpenQA::Schema::Result::JobDependencies;
 
+use Data::Dump qw(pp);
 use Carp;
 
 =pod
@@ -103,7 +104,6 @@ sub _sort_dep {
         $count{_settings_key($job)} //= 0;
         $count{_settings_key($job)}++;
     }
-
 
     my $added;
     do {
@@ -202,12 +202,19 @@ sub _generate_jobs {
         unless (@templates) {
             carp "no templates found for " . join('-', map { $args->{$_} } qw(DISTRI VERSION FLAVOR ARCH));
         }
+
         for my $job_template (@templates) {
             if ($job_template->test_suite->is_cluster) {
                 log_info('This is a cluster!' . pp($job_template->test_suite->is_cluster));
-                if (my @cycles = $job_template->test_suite->has_cycles) {
+                my @cycles = $job_template->test_suite->has_cycles;
+                if (@cycles) {
+                    log_error('Not creating cluster for: '.$job_template->test_suite->name);
+                    log_info(pp(@cycles));
                     next if @cycles;
-                }
+                } else {
+                    log_error('*Not creating cluster for'.$job_template->test_suite->name);
+                    log_info(pp(@cycles));
+				};
             }
             my %settings = map { $_->key => $_->value } $product->settings;
 
@@ -227,6 +234,7 @@ sub _generate_jobs {
             if (my $class = delete $tmp_settings{WORKER_CLASS}) {
                 push @classes, $class;
             }
+
             @settings{keys %tmp_settings} = values %tmp_settings;
             $settings{TEST}               = $job_template->test_suite->name;
             $settings{MACHINE}            = $job_template->machine->name;
@@ -286,10 +294,11 @@ sub _generate_jobs {
                     }
                 }
             }
-
             push @$ret, \%settings;
         }
+
     }
+
 
     $ret = _sort_dep($ret);
     # the array is sorted parents first - iterate it backward
@@ -323,8 +332,9 @@ defined. Internal method used by the B<schedule_iso()> method.
 
 sub job_create_dependencies {
     my ($self, $job, $testsuite_mapping) = @_;
-
+    my $possible_cycles;
     my @error_messages;
+    my @ids_to_delete;
     my $settings = $job->settings_hash;
     for my $dependency (
         ['START_AFTER_TEST', OpenQA::Schema::Result::JobDependencies::CHAINED],
@@ -340,16 +350,51 @@ sub job_create_dependencies {
             }
             else {
                 for my $parent (@{$testsuite_mapping->{$testsuite}}) {
+
+                    $possible_cycles = $self->db->resultset('JobDependencies')->search(
+                        {
+                            dependency => [
+                                OpenQA::Schema::Result::JobDependencies::PARALLEL,
+                                OpenQA::Schema::Result::JobDependencies::CHAINED
+                            ],
+                            -or => {
+                                child_job_id  => $job->id,
+                                parent_job_id => $job->id
+                            }});
+
+                    # if (@ids_to_delete gt 0 ) {
+
+                    #     push @ids_to_delete, map { $_->id } $possible_cycles->all;
+                    #     push @ids_to_delete, $job->id;
+
+                    #     my $error_msg2 = "$depname=$testsuite Has a circular dependency";
+                    #     OpenQA::Utils::log_error(pp($testsuite_mapping));
+                    #     OpenQA::Utils::log_warning($error_msg2);
+                    #     push(@error_messages, $error_msg2);
+
+                    # } else {
                     $self->db->resultset('JobDependencies')->create(
                         {
                             child_job_id  => $job->id,
                             parent_job_id => $parent,
                             dependency    => $deptype,
                         });
+
+                    #                     }
+
                 }
             }
         }
     }
+
+    if (@ids_to_delete) {
+        OpenQA::Utils::log_warning("Deleting all of this jobs: \t" . pp(@ids_to_delete));
+        $self->db->resultset('JobDependencies')->search(
+            {
+                child_job_id => {-in => \@ids_to_delete},
+                -or => {parent_job_id => {-in => \@ids_to_delete}}})->delete_all();
+    }
+
     return \@error_messages;
 }
 
