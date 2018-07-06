@@ -114,7 +114,7 @@ sub _sort_dep {
             push @after, _parse_dep_variable($job->{START_AFTER_TEST}, $job);
             push @after, _parse_dep_variable($job->{PARALLEL_WITH},    $job);
 
-            my $c = 0;    # number of parens that must go to @out before this job
+            my $c = 0;    # number of parents that must go to @out before this job
             foreach my $a (@after) {
                 $c += $count{$a} if defined $count{$a};
             }
