@@ -17,12 +17,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use Mojo::Base -strict;
 BEGIN {
     unshift @INC, 'lib';
     $ENV{OPENQA_TEST_IPC} = 1;
 }
 
-use Mojo::Base -strict;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Test::More;
@@ -179,7 +179,7 @@ subtest 'Multi Machine job dependencies' => sub {
             _GROUP     => 'opensuse test',
         });
 
-    is($res->json->{count}, 1, 'only one job created due to group filter');
+    is($res->json->{count}, 1, 'only one job created due to group filter') or diag explain $res->json->{count};
 
 };
 
@@ -218,7 +218,7 @@ subtest 'group filter' => sub {
             PRECEDENCE => 'original',
             _GROUP     => 'opensuse test',
         });
-    is($res->json->{count}, 1, 'only one job created due to group filter');
+    is($res->json->{count}, 2, 'only one job created due to group filter');
 
     $res = schedule_iso(
         {
@@ -231,7 +231,7 @@ subtest 'group filter' => sub {
             PRECEDENCE => 'original',
             _GROUP_ID  => '1002',
         });
-    is($res->json->{count}, 1, 'only one job created due to group filter (by ID)');
+    is($res->json->{count}, 2, 'only one job created due to group filter (by ID)');
 
     # delete job template again so the remaining tests are unaffected
     $job_template->delete;

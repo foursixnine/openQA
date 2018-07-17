@@ -208,13 +208,14 @@ sub _generate_jobs {
                 log_info('This is a cluster!' . pp($job_template->test_suite->is_cluster));
                 my @cycles = $job_template->test_suite->has_cycles;
                 if (@cycles) {
-                    log_error('Not creating cluster for: '.$job_template->test_suite->name);
+                    log_error('Not creating cluster for: ' . $job_template->test_suite->name);
                     log_info(pp(@cycles));
                     next if @cycles;
-                } else {
-                    log_error('*Not creating cluster for'.$job_template->test_suite->name);
+                }
+                else {
+                    log_error('*Not creating cluster for' . $job_template->test_suite->name);
                     log_info(pp(@cycles));
-				};
+                }
             }
             my %settings = map { $_->key => $_->value } $product->settings;
 
@@ -362,17 +363,17 @@ sub job_create_dependencies {
                                 parent_job_id => $job->id
                             }});
 
-                    # if (@ids_to_delete gt 0 ) {
+        if (@ids_to_delete gt 0 ) {
 
-                    #     push @ids_to_delete, map { $_->id } $possible_cycles->all;
-                    #     push @ids_to_delete, $job->id;
+            push @ids_to_delete, map { $_->id } $possible_cycles->all;
+            push @ids_to_delete, $job->id;
 
-                    #     my $error_msg2 = "$depname=$testsuite Has a circular dependency";
-                    #     OpenQA::Utils::log_error(pp($testsuite_mapping));
-                    #     OpenQA::Utils::log_warning($error_msg2);
-                    #     push(@error_messages, $error_msg2);
+            my $error_msg2 = "$depname=$testsuite Has a circular dependency";
+            OpenQA::Utils::log_error(pp($testsuite_mapping));
+            OpenQA::Utils::log_warning($error_msg2);
+            push(@error_messages, $error_msg2);
 
-                    # } else {
+        } else {
                     $self->db->resultset('JobDependencies')->create(
                         {
                             child_job_id  => $job->id,
