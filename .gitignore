@@ -18,6 +18,7 @@ archive
 backlog
 video
 *.swp
+*.log
 .sass-cache/
 www/htdocs/includes/knownissues.html
 *~
