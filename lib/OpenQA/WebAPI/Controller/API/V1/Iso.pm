@@ -337,6 +337,7 @@ sub job_create_dependencies {
     my @error_messages;
     my @ids_to_delete;
     my $settings = $job->settings_hash;
+    my %messages;
     for my $dependency (
         ['START_AFTER_TEST', OpenQA::Schema::Result::JobDependencies::CHAINED],
         ['PARALLEL_WITH',    OpenQA::Schema::Result::JobDependencies::PARALLEL])
@@ -345,9 +346,8 @@ sub job_create_dependencies {
         next unless defined $settings->{$depname};
         for my $testsuite (_parse_dep_variable($settings->{$depname}, $settings)) {
             if (!defined $testsuite_mapping->{$testsuite}) {
-                my $error_msg = "$depname=$testsuite not found - check for typos and dependency cycles";
-                OpenQA::Utils::log_warning($error_msg);
-                push(@error_messages, $error_msg);
+                $messages{$depname=$testsuite} = "not found - check for typos and dependency cycles";
+                OpenQA::Utils::log_warning($messages{$depname=$testsuite});
             }
             else {
                 for my $parent (@{$testsuite_mapping->{$testsuite}}) {
@@ -396,6 +396,7 @@ sub job_create_dependencies {
                 -or => {parent_job_id => {-in => \@ids_to_delete}}})->delete_all();
     }
 
+    push @error_messages, map { $_." - ".$messages{$_} } keys %messages;
     return \@error_messages;
 }
 
