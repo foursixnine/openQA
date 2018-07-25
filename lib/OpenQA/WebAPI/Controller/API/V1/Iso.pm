@@ -346,6 +346,8 @@ sub job_create_dependencies {
         next unless defined $settings->{$depname};
         for my $testsuite (_parse_dep_variable($settings->{$depname}, $settings)) {
             if (!defined $testsuite_mapping->{$testsuite}) {
+                $messages{$depname = $testsuite} = "not found - check for typos and dependency cycles";
+                OpenQA::Utils::log_warning($messages{$depname = $testsuite});
                 $messages{$depname=$testsuite} = "not found - check for typos and dependency cycles";
                 OpenQA::Utils::log_warning($messages{$depname=$testsuite});
             }
@@ -390,14 +392,16 @@ sub job_create_dependencies {
 
     if (@ids_to_delete) {
         OpenQA::Utils::log_warning("Deleting all of this jobs: \t" . pp(@ids_to_delete));
-        $self->db->resultset('JobDependencies')->search(
+        # Look for all the ids to delete and cancel them;
+        map { say 'Job: ' . $_->id . ' Needs to be cancelled'; $_->cancel; } $self->db->resultset('Jobs')->search(
             {
-                child_job_id => {-in => \@ids_to_delete},
-                -or => {parent_job_id => {-in => \@ids_to_delete}}})->delete_all();
+                id => {
+                    -in => \@ids_to_delete
+                }})->all;
     }
 
-    push @error_messages, map { $_." - ".$messages{$_} } keys %messages;
-    return \@error_messages;
+    push @error_messages, map { $_ . " - " . $messages{$_} } keys %messages;
+    return (\@error_messages, @ids_to_delete + 0);
 }
 
 =over 4
@@ -539,10 +543,13 @@ sub schedule_iso {
             }
             $job->update;
         }
+        my $cycle_detected;
 
         # jobs are created, now recreate dependencies and extract ids
+
         for my $job (@jobs) {
-            my $error_messages = $self->job_create_dependencies($job, \%testsuite_ids);
+            my ($error_messages, $c) = $self->job_create_dependencies($job, \%testsuite_ids);
+            $cycle_detected ||= ($cycle_detected || $c) ? 1 : 0;
             if (!@$error_messages) {
                 push(@successful_job_ids, $job->id);
             }
@@ -555,7 +562,8 @@ sub schedule_iso {
                     });
             }
         }
-
+        #no need to keep going, if we're already sure that there's a loop
+        croak "Possible cycles detected" if $cycle_detected;
         # enqueue gru jobs
         if (%downloads and @successful_job_ids) {
             # array of hashrefs job_id => id; this is what create needs
