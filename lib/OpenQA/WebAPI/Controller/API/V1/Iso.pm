@@ -204,19 +204,18 @@ sub _generate_jobs {
         }
 
         for my $job_template (@templates) {
-            if ($job_template->test_suite->is_cluster) {
-                log_info('This is a cluster!' . pp($job_template->test_suite->is_cluster));
-                my @cycles = $job_template->test_suite->has_cycles;
-                if (@cycles) {
-                    log_error('Not creating cluster for: ' . $job_template->test_suite->name);
-                    log_info(pp(@cycles));
-                    next if @cycles;
-                }
-                else {
-                    log_error('*Not creating cluster for' . $job_template->test_suite->name);
-                    log_info(pp(@cycles));
-                }
-            }
+            # if ($job_template->test_suite->is_cluster) {
+            #     log_info('This is a cluster!' . pp($job_template->test_suite->is_cluster));
+            #     my @cycles = $job_template->test_suite->has_cycles;
+            #     if (@cycles) {
+            #         log_error('Circular depndency detected: ' . $job_template->test_suite->name);
+            #         log_info(pp(@cycles));
+            #     }
+            #     else {
+            #         log_error('No circular dependency for' . $job_template->test_suite->name);
+            #         log_info(pp(@cycles));
+            #     }
+            # }
             my %settings = map { $_->key => $_->value } $product->settings;
 
             # we need to merge worker classes of all 3
