@@ -336,6 +336,7 @@ sub job_create_dependencies {
     my @error_messages;
     my @ids_to_delete;
     my $settings = $job->settings_hash;
+    use feature 'say';
     my %messages;
     for my $dependency (
         ['START_AFTER_TEST', OpenQA::Schema::Result::JobDependencies::CHAINED],
