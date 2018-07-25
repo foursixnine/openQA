@@ -342,18 +342,26 @@ sub job_create_dependencies {
         ['START_AFTER_TEST', OpenQA::Schema::Result::JobDependencies::CHAINED],
         ['PARALLEL_WITH',    OpenQA::Schema::Result::JobDependencies::PARALLEL])
     {
+        OpenQA::Utils::log_warning('Creating dependencies for' . $dependency->[0]);
         my ($depname, $deptype) = @$dependency;
         next unless defined $settings->{$depname};
         for my $testsuite (_parse_dep_variable($settings->{$depname}, $settings)) {
             if (!defined $testsuite_mapping->{$testsuite}) {
                 $messages{$depname = $testsuite} = "not found - check for typos and dependency cycles";
                 OpenQA::Utils::log_warning($messages{$depname = $testsuite});
-                $messages{$depname=$testsuite} = "not found - check for typos and dependency cycles";
-                OpenQA::Utils::log_warning($messages{$depname=$testsuite});
             }
             else {
                 for my $parent (@{$testsuite_mapping->{$testsuite}}) {
+					OpenQA::Utils::log_warning($job->id .' --> '. $parent );
+                    $self->db->resultset('JobDependencies')->create(
+                        {
+                            child_job_id  => $job->id,
+                            parent_job_id => $parent,
+                            dependency    => $deptype,
+                        });
 
+                    # Catch loops like algol-f:PARALLEL_WITH=algol-f
+                    # by allowing the dependency to be created first.
                     $possible_cycles = $self->db->resultset('JobDependencies')->search(
                         {
                             dependency => [
@@ -365,25 +373,15 @@ sub job_create_dependencies {
                                 parent_job_id => $job->id
                             }});
 
-        if (@ids_to_delete gt 0 ) {
+                    push @ids_to_delete, map { $_->id } $possible_cycles->all;
+                    # add the clulprit to a list, drag everyone around
 
-            push @ids_to_delete, map { $_->id } $possible_cycles->all;
-            push @ids_to_delete, $job->id;
-
-            my $error_msg2 = "$depname=$testsuite Has a circular dependency";
-            OpenQA::Utils::log_error(pp($testsuite_mapping));
-            OpenQA::Utils::log_warning($error_msg2);
-            push(@error_messages, $error_msg2);
-
-        } else {
-                    $self->db->resultset('JobDependencies')->create(
-                        {
-                            child_job_id  => $job->id,
-                            parent_job_id => $parent,
-                            dependency    => $deptype,
-                        });
-
-                    #                     }
+                    if (@ids_to_delete > 0) {
+                        push @ids_to_delete, $job->id;
+                        # Just avoid multiple messages
+                        $messages{"$deptype=$testsuite"} = "contains a possible cycle";
+                        OpenQA::Utils::log_error(pp($testsuite_mapping));
+                    }
 
                 }
             }
@@ -544,7 +542,6 @@ sub schedule_iso {
             $job->update;
         }
         my $cycle_detected;
-
         # jobs are created, now recreate dependencies and extract ids
 
         for my $job (@jobs) {
