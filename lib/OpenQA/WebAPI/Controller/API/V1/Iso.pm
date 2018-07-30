@@ -16,6 +16,7 @@
 package OpenQA::WebAPI::Controller::API::V1::Iso;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Util 'url_unescape';
+use OpenQA::Utils qw(log_debug log_warning log_error);
 use File::Basename;
 
 use OpenQA::Utils;
@@ -163,7 +164,7 @@ sub _generate_jobs {
         });
 
     unless (@products) {
-        OpenQA::Utils::log_warning('no products found, retrying version wildcard');
+        log_warning('no products found, retrying version wildcard');
         @products = $self->db->resultset('Products')->search(
             {
                 distri  => lc($args->{DISTRI}),
@@ -342,17 +343,18 @@ sub job_create_dependencies {
         ['START_AFTER_TEST', OpenQA::Schema::Result::JobDependencies::CHAINED],
         ['PARALLEL_WITH',    OpenQA::Schema::Result::JobDependencies::PARALLEL])
     {
-        OpenQA::Utils::log_warning('Creating dependencies for' . $dependency->[0]);
+        log_warning('Creating dependencies for ' . $dependency->[0]);
         my ($depname, $deptype) = @$dependency;
         next unless defined $settings->{$depname};
+        log_debug($job->id . " - " . $job->name . " -- ");
         for my $testsuite (_parse_dep_variable($settings->{$depname}, $settings)) {
             if (!defined $testsuite_mapping->{$testsuite}) {
                 $messages{$depname = $testsuite} = "not found - check for typos and dependency cycles";
-                OpenQA::Utils::log_warning($messages{$depname = $testsuite});
+                log_debug($messages{$depname = $testsuite});
             }
             else {
                 for my $parent (@{$testsuite_mapping->{$testsuite}}) {
-					OpenQA::Utils::log_warning($job->id .' --> '. $parent );
+                    log_warning($job->id . ' --> ' . $parent);
                     $self->db->resultset('JobDependencies')->create(
                         {
                             child_job_id  => $job->id,
@@ -455,7 +457,7 @@ sub schedule_iso {
         # need this to determine the download location later
         my $assettype = asset_type_from_setting($short);
         unless ($assettype) {
-            OpenQA::Utils::log_debug("_URL downloading only allowed for asset types! $short is not an asset type");
+            log_debug("_URL downloading only allowed for asset types! $short is not an asset type");
             next;
         }
         if (!$args->{$short}) {
@@ -467,7 +469,7 @@ sub schedule_iso {
             }
             $args->{$short} = $filename;
             if (!$args->{$short}) {
-                OpenQA::Utils::log_warning("Unable to get filename from $url. Ignoring $arg");
+                log_warning("Unable to get filename from $url. Ignoring $arg");
                 delete $args->{$short} unless $args->{$short};
                 next;
             }
@@ -492,8 +494,7 @@ sub schedule_iso {
 
     if (($obsolete || $deprioritize) && $jobs && $jobs->[0] && $jobs->[0]->{BUILD}) {
         my $build = $jobs->[0]->{BUILD};
-        OpenQA::Utils::log_debug(
-            "Triggering new iso with build \'$build\', obsolete: $obsolete, deprioritize: $deprioritize");
+        log_debug("Triggering new iso with build \'$build\', obsolete: $obsolete, deprioritize: $deprioritize");
         my %cond;
         my @attrs = qw(DISTRI VERSION FLAVOR ARCH);
         push @attrs, 'BUILD' if ($onlysame);
@@ -560,7 +561,7 @@ sub schedule_iso {
             }
         }
         #no need to keep going, if we're already sure that there's a loop
-        croak "Possible cycles detected" if $cycle_detected;
+        log_error "Possible cycles detected, but we should have died earlier!" if $cycle_detected;
         # enqueue gru jobs
         if (%downloads and @successful_job_ids) {
             # array of hashrefs job_id => id; this is what create needs
