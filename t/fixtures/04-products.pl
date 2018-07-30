@@ -116,6 +116,26 @@
             {machine => {name => '64bit'}, test_suite => {name => 'client2'},      prio => 40, group_id => 1001},
             {machine => {name => '64bit'}, test_suite => {name => 'server'},       prio => 40, group_id => 1001},
             {machine => {name => '64bit'}, test_suite => {name => 'advanced_kde'}, prio => 40, group_id => 1001},
+        ],
+    },
+    Products => {
+        id       => 2,
+        name     => '',
+        distri   => 'algol',
+        version  => 'DEMON',
+        flavor   => 'STAR',
+        arch     => 'i586',
+        settings => [
+            {
+                key   => "ISO_MAXSIZE",
+                value => 4_700_372_992
+            },
+            {
+                key   => "DVD",
+                value => "1"
+            },
+        ],
+        job_templates => [
             {machine => {name => '64bit'}, test_suite => {name => 'algol-a'}, prio => 40, group_id => 1002},
             {machine => {name => '64bit'}, test_suite => {name => 'algol-b'}, prio => 40, group_id => 1002},
             {machine => {name => '64bit'}, test_suite => {name => 'algol-c'}, prio => 40, group_id => 1002},
