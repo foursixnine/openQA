@@ -376,6 +376,25 @@ sub job_create_dependencies {
     return (\@error_messages, %parents);
 }
 
+sub check_for_cycles {
+    my ($family, $family_tree) = @_;
+    my $possible_cycles = '';
+    my %messages;
+    log_debug("Got family - \t" . pp($family));
+    log_debug("Current Family tree \t" . pp($family_tree));
+    my ($orphan) = (keys %{$family});
+    #let's get the siblings as job ids.
+    for my $member (keys %{$family_tree}) {
+        for my $member_parent (@{$family_tree->{$member}{PARALLEL_WITH}}) {
+            log_info("We have $member_parent ? $orphan " . pp($orphan));
+            croak "A cycle has been detected!" if $member_parent eq $orphan;
+
+        }
+    }
+
+    return (%$family, %$family_tree);
+
+}
 =over 4
 
 =item schedule_iso()
@@ -516,10 +535,11 @@ sub schedule_iso {
         }
         my $cycle_detected;
         # jobs are created, now recreate dependencies and extract ids
-
+        my %family_tree;
         for my $job (@jobs) {
-            my ($error_messages, $c) = $self->job_create_dependencies($job, \%testsuite_ids);
-            $cycle_detected ||= ($cycle_detected || $c) ? 1 : 0;
+            my ($error_messages, %family) = $self->job_create_dependencies($job, \%testsuite_ids);
+            # We just need to remember our family tree
+            %family_tree = check_for_cycles(\%family, \%family_tree);
             if (!@$error_messages) {
                 push(@successful_job_ids, $job->id);
             }
