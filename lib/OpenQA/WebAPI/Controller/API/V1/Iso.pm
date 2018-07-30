@@ -333,9 +333,9 @@ defined. Internal method used by the B<schedule_iso()> method.
 
 sub job_create_dependencies {
     my ($self, $job, $testsuite_mapping) = @_;
-    my $possible_cycles;
+
     my @error_messages;
-    my @ids_to_delete;
+    my %parents;
     my $settings = $job->settings_hash;
     use feature 'say';
     my %messages;
@@ -361,47 +361,19 @@ sub job_create_dependencies {
                             parent_job_id => $parent,
                             dependency    => $deptype,
                         });
-
-                    # Catch loops like algol-f:PARALLEL_WITH=algol-f
-                    # by allowing the dependency to be created first.
-                    $possible_cycles = $self->db->resultset('JobDependencies')->search(
-                        {
-                            dependency => [
-                                OpenQA::Schema::Result::JobDependencies::PARALLEL,
-                                OpenQA::Schema::Result::JobDependencies::CHAINED
-                            ],
-                            -or => {
-                                child_job_id  => $job->id,
-                                parent_job_id => $job->id
-                            }});
-
-                    push @ids_to_delete, map { $_->id } $possible_cycles->all;
-                    # add the clulprit to a list, drag everyone around
-
-                    if (@ids_to_delete > 0) {
-                        push @ids_to_delete, $job->id;
-                        # Just avoid multiple messages
-                        $messages{"$deptype=$testsuite"} = "contains a possible cycle";
-                        OpenQA::Utils::log_error(pp($testsuite_mapping));
-                    }
-
+                    log_debug("\t\t -- $depname => {$parent}");
+                    # we need to catch loops like algol-f:PARALLEL_WITH=algol-f
+                    # by allowing the dependency to be created first and then adding
+                    # the parents to a hash, visit the nodes afterwards.
+                    push @{$parents{$job->id}{$depname}}, $parent;
                 }
             }
         }
     }
 
-    if (@ids_to_delete) {
-        OpenQA::Utils::log_warning("Deleting all of this jobs: \t" . pp(@ids_to_delete));
-        # Look for all the ids to delete and cancel them;
-        map { say 'Job: ' . $_->id . ' Needs to be cancelled'; $_->cancel; } $self->db->resultset('Jobs')->search(
-            {
-                id => {
-                    -in => \@ids_to_delete
-                }})->all;
-    }
 
     push @error_messages, map { $_ . " - " . $messages{$_} } keys %messages;
-    return (\@error_messages, @ids_to_delete + 0);
+    return (\@error_messages, %parents);
 }
 
 =over 4
