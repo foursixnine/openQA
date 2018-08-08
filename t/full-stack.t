@@ -319,6 +319,12 @@ close($conf);
 
 ok(-e path($ENV{OPENQA_CONFIG})->child("workers.ini"), "Config file created.");
 
+sub diag_stuff {
+    my ($id, $job_name) = @_;
+    my $contents = path($resultdir . "/00000/0000000$id-$job_name/autoinst-log.txt")->slurp;
+    diag $contents;
+
+}
 # For now let's repeat the cache tests before extracting to separate test
 subtest 'Cache tests' => sub {
 
@@ -331,14 +337,15 @@ subtest 'Cache tests' => sub {
 
     my $db_file  = $cache_location->child('cache.sqlite');
     my $job_name = 'tinycore-1-flavor-i386-Build1-core@coolone';
+    my $job_id   = 5;
     OpenQA::Test::FullstackUtils::client_call(
         'jobs/3/restart post',
-        qr|\Qtest_url => [{ 3 => "/tests/5\E|,
+        qr|\Qtest_url => [{ 3 => "/tests/$job_id\E|,
         'client returned new test_url'
-    );
+    ) or diag_stuff(5, $job_name);
     #] restore syntax highlighting in Kate
 
-    $driver->get('/tests/5');
+    $driver->get("/tests/$job_id");
     like($driver->find_element('#result-row .card-body')->get_text(), qr/State: scheduled/, 'test 5 is scheduled');
     ok(!-e $db_file, "cache.sqlite is not present");
     start_worker;
@@ -520,5 +527,6 @@ done_testing;
 END {
     kill_driver;
     turn_down_stack;
+    done_testing;
     $? = 0;
 }
