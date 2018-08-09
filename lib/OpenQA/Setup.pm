@@ -67,7 +67,10 @@ sub setup_log {
         $log = $self->log;
     }
     $level //= $self->config->{logging}->{level} // 'info';
-    $logfile = $ENV{OPENQA_LOGFILE} || $self->config->{logging}->{file};
+    $logfile
+      = $ENV{OPENQA_SCHEDULER_LOGFILE}
+      || $ENV{OPENQA_LOGFILE}
+      || $self->config->{logging}->{file};
 
     if ($logfile && $logdir) {
         $logfile = catfile($logdir, $logfile);
