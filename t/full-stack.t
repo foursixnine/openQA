@@ -106,7 +106,9 @@ ok(Mojolicious::Commands->start_app('OpenQA::WebAPI', 'eval', '1+0'));
 $schedulerpid = fork();
 if ($schedulerpid == 0) {
     use OpenQA::Scheduler;
+    $ENV{OPENQA_SCHEDULER_LOGFILE} = '/tmp/openqa-scheduler.log';
     OpenQA::Scheduler::run;
+    delete $ENV{OPENQA_SCHEDULER_LOGFILE};
     Devel::Cover::report() if Devel::Cover->can('report');
     _exit(0);
 }
