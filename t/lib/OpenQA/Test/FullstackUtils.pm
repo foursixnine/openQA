@@ -64,7 +64,7 @@ sub client_call {
     my $out = client_output $args;
     is($?, 0, "Client $args succeeded");
     if ($expected_out) {
-        like($out, $expected_out, $desc);
+        like($out, $expected_out, $desc) or diag explain $out;
     }
 }
 
