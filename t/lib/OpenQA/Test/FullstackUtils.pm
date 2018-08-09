@@ -51,8 +51,10 @@ sub client_output {
     my ($args) = @_;
     my $connect_args = get_connect_args();
     open(my $client, "-|", "perl ./script/client $connect_args $args");
+    diag "perl ./script/client $connect_args $args";
     my $out;
     while (<$client>) {
+        diag $out;
         $out .= $_;
     }
     close($client);
@@ -64,7 +66,7 @@ sub client_call {
     my $out = client_output $args;
     is($?, 0, "Client $args succeeded");
     if ($expected_out) {
-        like($out, $expected_out, $desc);
+        like($out, $expected_out, $desc) or diag explain $out;
     }
 }
 
