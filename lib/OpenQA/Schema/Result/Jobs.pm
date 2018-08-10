@@ -585,12 +585,12 @@ sub can_be_duplicated {
     my $state = $self->state;
 
     unless (grep { /$state/ } (EXECUTION_STATES, FINAL_STATES)) {
-        log_debug("Job is in state: $state: ".$self->id);
+        log_debug("Job is in state: $state: " . $self->id);
         return;
-    };
+    }
 
-    if ($self->clone){
-        log_debug("Job already has a clone".$self->clone->id);
+    if ($self->clone) {
+        log_debug("Job " . $self->id . " already has a clone " . $self->clone->id);
         return;
     }
 
