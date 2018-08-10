@@ -340,12 +340,16 @@ subtest 'Cache tests' => sub {
     my $db_file  = $cache_location->child('cache.sqlite');
     my $job_name = 'tinycore-1-flavor-i386-Build1-core@coolone';
     my $job_id   = 5;
-    OpenQA::Test::FullstackUtils::client_call(
+    diag OpenQA::Test::FullstackUtils::client_call('jobs/3 get');
+    diag OpenQA::Test::FullstackUtils::client_call(
         'jobs/3/restart post',
         qr|\Qtest_url => [{ 3 => "/tests/$job_id\E|,
         'client returned new test_url'
     ) or diag_stuff(5, $job_name);
     #] restore syntax highlighting in Kate
+    diag OpenQA::Test::FullstackUtils::client_call('jobs/4 get');
+    diag OpenQA::Test::FullstackUtils::client_call('jobs/5 get');
+    diag OpenQA::Test::FullstackUtils::client_call('jobs/6 get');
 
     $driver->get("/tests/$job_id");
     like($driver->find_element('#result-row .card-body')->get_text(), qr/State: scheduled/, 'test 5 is scheduled');
