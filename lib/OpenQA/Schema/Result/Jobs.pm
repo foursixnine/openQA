@@ -583,8 +583,17 @@ sub can_be_duplicated {
     my ($self) = @_;
 
     my $state = $self->state;
-    return unless (grep { /$state/ } (EXECUTION_STATES, FINAL_STATES));
-    return if $self->clone;
+
+    unless (grep { /$state/ } (EXECUTION_STATES, FINAL_STATES)) {
+        log_debug("Job is in state: $state: " . $self->id);
+        return;
+    }
+
+    if ($self->clone) {
+        log_debug("Job " . $self->id . " already has a clone " . $self->clone->id);
+        return;
+    }
+
     return 1;
 }
 
@@ -836,10 +845,11 @@ sub auto_duplicate {
     # set this clone was triggered by manually if it's not auto-clone
     $args->{dup_type_auto} //= 0;
 
+    log_debug("Will auto duplicate");
     my $clones = $self->duplicate($args);
 
     unless ($clones) {
-        log_debug('duplication failed');
+        log_debug("duplication failed");
         return;
     }
     # abort jobs in the old cluster (exclude the original $args->{jobid})
