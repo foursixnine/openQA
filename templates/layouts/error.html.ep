@@ -10,7 +10,7 @@
       <meta name="author" content="openQA contributors">
 
       % if ($title) {
-      <title><%= $appname . ": " . title %></title>
+      <title><%= defined ($appname)? $appname : 'No name' . ": " . title %></title>
       % } else
       % {
       <title><%= $appname %></title>
