@@ -48,7 +48,7 @@ get job from specified host
 
 =item B<--dir> DIR
 
-specify directory where test assets are stored (default /var/lib/openqa/factory)
++specify directory where test assets are stored (default /var/lib/openqa/factory), if OPENQA_BASEDIR is set, this parameter is ignored
 
 =item B<--skip-deps>
 
@@ -110,6 +110,7 @@ use Getopt::Long;
 use LWP::UserAgent;
 Getopt::Long::Configure("no_ignore_case");
 use Mojo::URL;
+use Mojo::File qw(path);
 use JSON;
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
@@ -136,7 +137,12 @@ usage(1) unless exists $options{'from'};
 
 my $jobid = shift @ARGV || die "missing jobid\n";
 
-$options{'dir'} ||= '/var/lib/openqa/factory';
+if ($ENV{OPENQA_BASEDIR}) {
+    # If the user has it's own OPENQA_BASEDIR, assume that dir can be safely
+    # overwritten
+    warn "OPENQA_BASEDIR is also set" if $options{'dir'};
+    $options{'dir'} ||= path($ENV{OPENQA_BASEDIR}, 'openqa', 'share', 'factory');
+}
 
 my $ua = LWP::UserAgent->new;
 $ua->timeout(10);
