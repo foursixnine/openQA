@@ -176,7 +176,7 @@ subtest 'calling again with same settings' => sub {
 
 $job->set_prio(40);
 my $new_job = job_get_hash($job->id);
-is_deeply($new_job, $job_ref, "job_get");
+is_deeply($new_job, $job_ref, "job_get") or diag explain $new_job;
 
 # Testing list_jobs
 my $jobs = [

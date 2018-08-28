@@ -16,6 +16,7 @@
 package OpenQA::WebAPI::Controller::API::V1::Iso;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Util 'url_unescape';
+use OpenQA::Utils qw(log_debug log_warning log_error);
 use File::Basename;
 
 use OpenQA::Utils;
@@ -24,6 +25,7 @@ use Try::Tiny;
 use DBIx::Class::Timestamps 'now';
 use OpenQA::Schema::Result::JobDependencies;
 
+use Data::Dump qw(pp);
 use Carp;
 
 =pod
@@ -104,7 +106,6 @@ sub _sort_dep {
         $count{_settings_key($job)}++;
     }
 
-
     my $added;
     do {
         $added = 0;
@@ -114,7 +115,7 @@ sub _sort_dep {
             push @after, _parse_dep_variable($job->{START_AFTER_TEST}, $job);
             push @after, _parse_dep_variable($job->{PARALLEL_WITH},    $job);
 
-            my $c = 0;    # number of parens that must go to @out before this job
+            my $c = 0;    # number of parents that must go to @out before this job
             foreach my $a (@after) {
                 $c += $count{$a} if defined $count{$a};
             }
@@ -163,7 +164,7 @@ sub _generate_jobs {
         });
 
     unless (@products) {
-        OpenQA::Utils::log_warning('no products found, retrying version wildcard');
+        log_warning('no products found, retrying version wildcard');
         @products = $self->db->resultset('Products')->search(
             {
                 distri  => lc($args->{DISTRI}),
@@ -202,7 +203,20 @@ sub _generate_jobs {
         unless (@templates) {
             carp "no templates found for " . join('-', map { $args->{$_} } qw(DISTRI VERSION FLAVOR ARCH));
         }
+
         for my $job_template (@templates) {
+            # if ($job_template->test_suite->is_cluster) {
+            #     log_info('This is a cluster!' . pp($job_template->test_suite->is_cluster));
+            #     my @cycles = $job_template->test_suite->has_cycles;
+            #     if (@cycles) {
+            #         log_error('Circular depndency detected: ' . $job_template->test_suite->name);
+            #         log_info(pp(@cycles));
+            #     }
+            #     else {
+            #         log_error('No circular dependency for' . $job_template->test_suite->name);
+            #         log_info(pp(@cycles));
+            #     }
+            # }
             my %settings = map { $_->key => $_->value } $product->settings;
 
             # we need to merge worker classes of all 3
@@ -221,6 +235,7 @@ sub _generate_jobs {
             if (my $class = delete $tmp_settings{WORKER_CLASS}) {
                 push @classes, $class;
             }
+
             @settings{keys %tmp_settings} = values %tmp_settings;
             $settings{TEST}               = $job_template->test_suite->name;
             $settings{MACHINE}            = $job_template->machine->name;
@@ -280,10 +295,11 @@ sub _generate_jobs {
                     }
                 }
             }
-
             push @$ret, \%settings;
         }
+
     }
+
 
     $ret = _sort_dep($ret);
     # the array is sorted parents first - iterate it backward
@@ -319,34 +335,66 @@ sub job_create_dependencies {
     my ($self, $job, $testsuite_mapping) = @_;
 
     my @error_messages;
+    my %parents;
     my $settings = $job->settings_hash;
+    use feature 'say';
+    my %messages;
     for my $dependency (
         ['START_AFTER_TEST', OpenQA::Schema::Result::JobDependencies::CHAINED],
         ['PARALLEL_WITH',    OpenQA::Schema::Result::JobDependencies::PARALLEL])
     {
+        log_warning('Creating dependencies for ' . $dependency->[0]);
         my ($depname, $deptype) = @$dependency;
         next unless defined $settings->{$depname};
+        log_debug($job->id . " - " . $job->name . " -- ");
         for my $testsuite (_parse_dep_variable($settings->{$depname}, $settings)) {
             if (!defined $testsuite_mapping->{$testsuite}) {
-                my $error_msg = "$depname=$testsuite not found - check for typos and dependency cycles";
-                OpenQA::Utils::log_warning($error_msg);
-                push(@error_messages, $error_msg);
+                $messages{$depname = $testsuite} = "not found - check for typos and dependency cycles";
+                log_debug($messages{$depname = $testsuite});
             }
             else {
                 for my $parent (@{$testsuite_mapping->{$testsuite}}) {
+                    log_warning($job->id . ' --> ' . $parent);
                     $self->db->resultset('JobDependencies')->create(
                         {
                             child_job_id  => $job->id,
                             parent_job_id => $parent,
                             dependency    => $deptype,
                         });
+                    log_debug("\t\t -- $depname => {$parent}");
+                    # we need to catch loops like algol-f:PARALLEL_WITH=algol-f
+                    # by allowing the dependency to be created first and then adding
+                    # the parents to a hash, visit the nodes afterwards.
+                    push @{$parents{$job->id}{$depname}}, $parent;
                 }
             }
         }
     }
-    return \@error_messages;
+
+
+    push @error_messages, map { $_ . " - " . $messages{$_} } keys %messages;
+    return (\@error_messages, %parents);
 }
 
+sub check_for_cycles {
+    my ($family, $family_tree) = @_;
+    my $possible_cycles = '';
+    my %messages;
+    log_debug("Got family - \t" . pp($family));
+    log_debug("Current Family tree \t" . pp($family_tree));
+    my ($orphan) = (keys %{$family});
+    #let's get the siblings as job ids.
+    for my $member (keys %{$family_tree}) {
+        for my $member_parent (@{$family_tree->{$member}{PARALLEL_WITH}}) {
+            log_info("We have $member_parent ? $orphan " . pp($orphan));
+            croak "A cycle has been detected!" if $member_parent eq $orphan;
+
+        }
+    }
+
+    return (%$family, %$family_tree);
+
+}
 =over 4
 
 =item schedule_iso()
@@ -400,7 +448,7 @@ sub schedule_iso {
         # need this to determine the download location later
         my $assettype = asset_type_from_setting($short);
         unless ($assettype) {
-            OpenQA::Utils::log_debug("_URL downloading only allowed for asset types! $short is not an asset type");
+            log_debug("_URL downloading only allowed for asset types! $short is not an asset type");
             next;
         }
         if (!$args->{$short}) {
@@ -412,7 +460,7 @@ sub schedule_iso {
             }
             $args->{$short} = $filename;
             if (!$args->{$short}) {
-                OpenQA::Utils::log_warning("Unable to get filename from $url. Ignoring $arg");
+                log_warning("Unable to get filename from $url. Ignoring $arg");
                 delete $args->{$short} unless $args->{$short};
                 next;
             }
@@ -437,8 +485,7 @@ sub schedule_iso {
 
     if (($obsolete || $deprioritize) && $jobs && $jobs->[0] && $jobs->[0]->{BUILD}) {
         my $build = $jobs->[0]->{BUILD};
-        OpenQA::Utils::log_debug(
-            "Triggering new iso with build \'$build\', obsolete: $obsolete, deprioritize: $deprioritize");
+        log_debug("Triggering new iso with build \'$build\', obsolete: $obsolete, deprioritize: $deprioritize");
         my %cond;
         my @attrs = qw(DISTRI VERSION FLAVOR ARCH);
         push @attrs, 'BUILD' if ($onlysame);
@@ -486,10 +533,13 @@ sub schedule_iso {
             }
             $job->update;
         }
-
+        my $cycle_detected;
         # jobs are created, now recreate dependencies and extract ids
+        my %family_tree;
         for my $job (@jobs) {
-            my $error_messages = $self->job_create_dependencies($job, \%testsuite_ids);
+            my ($error_messages, %family) = $self->job_create_dependencies($job, \%testsuite_ids);
+            # We just need to remember our family tree
+            %family_tree = check_for_cycles(\%family, \%family_tree);
             if (!@$error_messages) {
                 push(@successful_job_ids, $job->id);
             }
@@ -502,7 +552,8 @@ sub schedule_iso {
                     });
             }
         }
-
+        #no need to keep going, if we're already sure that there's a loop
+        log_error "Possible cycles detected, but we should have died earlier!" if $cycle_detected;
         # enqueue gru jobs
         if (%downloads and @successful_job_ids) {
             # array of hashrefs job_id => id; this is what create needs

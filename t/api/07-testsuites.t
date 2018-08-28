@@ -151,7 +151,25 @@ is_deeply(
                     {
                         'key'   => 'START_AFTER_TEST',
                         'value' => 'kde,textmode'
-                    }]}]
+                    }]
+            },
+            {
+                id          => 1018,
+                name        => "algol-a",
+                description => 'algol a test',
+                settings    => [{key => "DESKTOP", value => "kde"}, {key => "PARALLEL_WITH", value => "algol-b"}]
+            },
+            {
+                id          => 1019,
+                name        => "algol-b",
+                description => 'Bad test suite',
+                settings    => [{key => "DESKTOP", value => "kde"}, {key => "PARALLEL_WITH", value => "algol-c"}]
+            },
+            {
+                id          => 1020,
+                name        => "algol-c",
+                description => 'Algol c test suite',
+                settings => [{key => "DESKTOP", value => "kde"}, {key => "PARALLEL_WITH", value => "algol-a,algol-b"}]}]
     },
     "Initial test suites"
 ) || diag explain $get->tx->res->json;

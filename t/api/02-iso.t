@@ -1,6 +1,6 @@
 #! /usr/bin/perl
 
-# Copyright (C) 2014-2016 SUSE LLC
+# Copyright (C) 2014-2018 SUSE LLC
 # Copyright (C) 2016 Red Hat
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use Mojo::Base -strict;
 BEGIN {
     unshift @INC, 'lib';
     $ENV{OPENQA_TEST_IPC} = 1;
 }
 
-use Mojo::Base -strict;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Test::More;
@@ -141,6 +141,51 @@ is(scalar @tasks, 0, 'we have no gru download tasks to start with');
 # later on is found as important and handled accordingly
 $schema->resultset('Jobs')->find(99928)->comments->create({text => 'any text', user_id => 99901});
 
+subtest 'Multi Machine job dependencies' => sub {
+
+    my $master_job = $t->app->db->resultset('JobTemplates')->create(
+        {
+            machine    => {name => '64bit'},
+            test_suite => {name => 'Algol-a'},
+            prio       => 42,
+            group_id   => 1002,
+            product_id => 1,
+        });
+
+    my $slave_job = $t->app->db->resultset('JobTemplates')->create(
+        {
+            machine    => {name => '64bit'},
+            test_suite => {name => 'Algol-b'},
+            prio       => 42,
+            group_id   => 1002,
+            product_id => 1,
+        });
+
+    my $master_slave = $t->app->db->resultset('JobTemplates')->create(
+        {
+            machine    => {name => '64bit'},
+            test_suite => {name => 'Algol-C'},
+            prio       => 42,
+            group_id   => 1002,
+            product_id => 1,
+        });
+
+    my $res = schedule_iso(
+        {
+            ISO        => $iso,
+            DISTRI     => 'opensuse',
+            VERSION    => '13.1',
+            FLAVOR     => 'DVD',
+            ARCH       => 'i586',
+            BUILD      => '0091',
+            PRECEDENCE => 'original',
+            _GROUP     => 'opensuse test',
+        });
+
+    is($res->json->{count}, 1, 'only one job created due to group filter') or diag explain $res->json->{count};
+
+};
+
 subtest 'group filter' => sub {
     # add a job template for group 1002
     my $job_template = $job_templates->create(
@@ -176,7 +221,7 @@ subtest 'group filter' => sub {
             PRECEDENCE => 'original',
             _GROUP     => 'opensuse test',
         });
-    is($res->json->{count}, 1, 'only one job created due to group filter');
+    is($res->json->{count}, 2, 'only one job created due to group filter');
 
     $res = schedule_iso(
         {
@@ -189,7 +234,7 @@ subtest 'group filter' => sub {
             PRECEDENCE => 'original',
             _GROUP_ID  => '1002',
         });
-    is($res->json->{count}, 1, 'only one job created due to group filter (by ID)');
+    is($res->json->{count}, 2, 'only one job created due to group filter (by ID)');
 
     # delete job template again so the remaining tests are unaffected
     $job_template->delete;
