@@ -4,7 +4,7 @@ set -e
 
 DIR=$1
 if test -z "$DIR"; then
-	DIR=$(mktemp -d)
+	DIR=$(mktemp -d -t openQA_PG_XXXXXX)
 else
 	DIR=$(readlink -f $DIR)
 fi
