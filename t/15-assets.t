@@ -80,6 +80,17 @@ my $workercaps = {
     WORKER_CLASS  => 'testAworker',
 };
 
+subtest 'Asset download' => sub {
+    use Data::Dump qw(pp);
+    $settings{ASSET_1_URL} = 'https://hello.com/index.pm';
+    pp(create_downloads_list(\%settings));
+    ok($settings{ASSET_1} eq 'index.pm', 'ASSET_1_URL translated correctly');
+    pp(\%settings);
+};
+
+
+plan skip_all => 'Not needed for now';
+
 my $jobA   = $schema->resultset('Jobs')->create_from_settings(\%settings);
 my @assets = $jobA->jobs_assets;
 @assets = map { $_->asset_id } @assets;
