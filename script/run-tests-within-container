@@ -47,6 +47,9 @@ function run_fullstack_test {
 
 if [ "x$FULLSTACK" = x1 ]; then
     run_fullstack_test t/full-stack.t
+    # For the time being it will be the same run, so skip the os-autoinst part
+    export CUSTOM_OS_AUTOINST_SKIP_BUILD=1
+    run_fullstack_test t/full-stack-cache.t
 elif [ "x$SCHEDULER_FULLSTACK" = x1 ]; then
     run_fullstack_test t/05-scheduler-full.t
 elif [ "x$DEVELOPER_FULLSTACK" = x1 ]; then
