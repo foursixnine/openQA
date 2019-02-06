@@ -83,9 +83,15 @@ my $workercaps = {
 subtest 'Asset download' => sub {
     use Data::Dump qw(pp);
     $settings{ASSET_1_URL} = 'https://hello.com/index.pm';
-    pp(create_downloads_list(\%settings));
+    $settings{ASSET_LOCAL_1_URL} = 'https://hello.com/local/index.pm';
+    $settings{FILE_DECOMPRESS_URL} = 'https://hello.com/darkness/myoldfriend.zip';
+    $settings{ARBITRARY_URL} = 'https://hello.com/ihavecome/toseeyouagain.zip';
+    create_downloads_list(\%settings);
     ok($settings{ASSET_1} eq 'index.pm', 'ASSET_1_URL translated correctly');
-    pp(\%settings);
+    ok($settings{ASSET_LOCAL_1} eq 'index.pm', 'LOCAL_1_URL translated correctly');
+    ok($settings{FILE} eq 'myoldfriend.zip', 'LOCAL_1_URL translated correctly');
+    ok(!defined($settings{ARBITRARY_2}), 'Arbitrary URL is not defined, therefore, not translated');
+	pp(\%settings);
 };
 
 

@@ -549,7 +549,9 @@ sub asset_type_from_setting {
     if ($setting =~ /^REPO_\d+$/) {
         return 'repo';
     }
-    if ($setting =~ /^ASSET_\d+$/ || $setting eq 'KERNEL' || $setting eq 'INITRD') {
+    if ($setting =~ /^ASSET_\d+$/ ||
+        $setting =~ /^ASSET_LOCAL_\d+$/ ||
+        $setting eq 'KERNEL' || $setting eq 'INITRD') {
         return 'other';
     }
     # empty string if this doesn't look like an asset type

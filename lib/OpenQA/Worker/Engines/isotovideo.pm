@@ -93,7 +93,9 @@ sub detect_asset_keys {
         $res{$isokey} = 'iso' if $vars->{$isokey};
     }
 
-    for my $otherkey (grep { /ASSET_\d+$/ } keys %{$vars}) {
+	# Treat ASSET_LOCAL as files that need to be downloaded by the
+	# cache service.
+    for my $otherkey (grep { /ASSET_LOCAL_\d+$/ } keys %{$vars}) {
         $res{$otherkey} = 'other';
     }
 
